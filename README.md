@@ -1,79 +1,123 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Monolite HR Native
 
-# Getting Started
+React Native mobile application for Monolite HR, built for iOS and Android.
 
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
+## Overview
 
-## Step 1: Start the Metro Server
+This is the React Native version of the Monolite HR web application. It provides the same functionality as the web version, optimized for mobile devices.
 
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
+## Features
 
-To start Metro, run the following command from the _root_ of your React Native project:
+- Authentication (Email/Password, Apple Sign In)
+- Hour logging and tracking
+- Material requests
+- Leave requests
+- Activity tracking
+- Communications
+- Profile management
+- Multi-language support (English, Italian)
 
+## Tech Stack
+
+- **React Native** 0.74.0
+- **TypeScript**
+- **React Navigation** - Navigation
+- **Supabase** - Backend and authentication
+- **React Query** - Data fetching
+- **React Hook Form** - Form management
+- **Zod** - Schema validation
+- **i18next** - Internationalization
+- **React Native Reanimated** - Animations
+
+## Design System
+
+The app uses a custom theme system with:
+- **Dark theme** with gold accents (#FFD700)
+- **Poppins** font family
+- **Gold glow effects** on interactive elements
+- **Smooth animations** and transitions
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 18
+- React Native development environment set up
+- iOS: Xcode and CocoaPods
+- Android: Android Studio and Android SDK
+
+### Installation
+
+1. Install dependencies:
 ```bash
-# using npm
-npm start
-
-# OR using Yarn
-yarn start
+npm install
 ```
 
-## Step 2: Start your Application
-
-Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your _Android_ or _iOS_ app:
-
-### For Android
-
+2. For iOS, install CocoaPods:
 ```bash
-# using npm
-npm run android
-
-# OR using Yarn
-yarn android
+cd ios
+pod install
+cd ..
 ```
 
-### For iOS
+### Running the App
 
+#### iOS
 ```bash
-# using npm
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
+#### Android
+```bash
+npm run android
+```
 
-This is one way to run your app — you can also run it directly from within Android Studio and Xcode respectively.
+### Development
 
-## Step 3: Modifying your App
+Start the Metro bundler:
+```bash
+npm start
+```
 
-Now that you have successfully run the app, let's modify it.
+## Project Structure
 
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> (on Window and Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (on macOS)) to see your changes!
+```
+src/
+├── components/       # Reusable UI components
+│   └── ui/          # Base UI components (Button, Input, Card, etc.)
+├── pages/           # Screen components
+├── navigation/      # Navigation configuration
+├── hooks/           # Custom React hooks
+├── theme/           # Design system (colors, typography, effects)
+├── integrations/    # Third-party integrations
+│   └── supabase/    # Supabase client and types
+├── i18n/            # Internationalization
+│   └── locales/    # Translation files
+└── lib/             # Utility functions
+```
 
-   For **iOS**: Hit <kbd>Cmd ⌘</kbd> + <kbd>R</kbd> in your iOS Simulator to reload the app and see your changes!
+## Environment Variables
 
-## Congratulations! :tada:
+The Supabase configuration is currently hardcoded in `src/integrations/supabase/client.ts`. For production, consider using environment variables.
 
-You've successfully run and modified your React Native App. :partying_face:
+## Building for Production
 
-### Now what?
+### iOS
+```bash
+cd ios
+xcodebuild -workspace MonoliteHRNative.xcworkspace -scheme MonoliteHRNative -configuration Release
+```
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
+### Android
+```bash
+cd android
+./gradlew assembleRelease
+```
 
-# Troubleshooting
+## Contributing
 
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+This project is part of the Monolite HR ecosystem. Please refer to the main project documentation for contribution guidelines.
 
-# Learn More
+## License
 
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+See the main Monolite HR repository for license information.
