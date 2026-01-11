@@ -72,6 +72,10 @@
 - [x] Home page (dashboard) - Fully implemented with today's hours and action cards
 - [x] Communications page - Implemented
 - [x] PendingInvitation page - Fully implemented
+- [x] ConfirmEmail page - Fully implemented with animations
+- [x] EmailConfirmed page - Fully implemented with animations
+- [x] ResetPassword page - Fully implemented
+- [x] UpdatePassword page - Fully implemented
 - [x] LanguageSwitcher component - Implemented
 - [ ] LogHours page (complex form with work types)
 - [ ] MaterialRequest page (form)
