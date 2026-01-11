@@ -17,7 +17,8 @@
     "success": "Successo",
     "error": "Errore",
     "ok": "OK",
-    "confirm": "Conferma"
+    "confirm": "Conferma",
+    "menu": "Menu"
   },
   "alert": {
     "success": "Successo",

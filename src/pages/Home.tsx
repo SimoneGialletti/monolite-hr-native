@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TextComponent } from '@/components/ui/text';
+import { AppBar } from '@/components/ui/app-bar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,16 +35,21 @@ const Home = () => {
         .from('v_workers_total_hours_today')
         .select('total_hours')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        console.error("Error loading today's hours:", error);
+        // Only log if it's not a "no rows" error
+        if (error.code !== 'PGRST116') {
+          console.error("Error loading today's hours:", error);
+        }
+        setTodayHours(0);
         return;
       }
 
       setTodayHours(data?.total_hours || 0);
     } catch (err) {
       console.error('Error:', err);
+      setTodayHours(0);
     }
   };
 
@@ -70,6 +76,7 @@ const Home = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <AppBar />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -83,7 +90,6 @@ const Home = () => {
               {t('home.subtitle')}
             </TextComponent>
           </View>
-          <LanguageSwitcher />
         </View>
 
         {/* Daily Hours Indicator */}
@@ -149,12 +155,15 @@ const Home = () => {
             </View>
           </CardHeader>
           <CardContent>
-            <Button
-              variant="outline"
+            <Pressable
+              style={styles.activitiesButton}
               onPress={() => navigation.navigate('MyActivities')}
             >
-              {t('myActivities.title')}
-            </Button>
+              <Icon name="clipboard-list" size={20} color={colors.gold} />
+              <TextComponent variant="body" style={styles.activitiesButtonText}>
+                {t('myActivities.title')}
+              </TextComponent>
+            </Pressable>
           </CardContent>
         </Card>
       </ScrollView>
@@ -171,14 +180,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingTop: spacing['3xl'], // Space for blurred app bar
     paddingBottom: spacing['3xl'], // Space for tab bar
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.xl,
-    marginTop: spacing.md,
   },
   headerText: {
     flex: 1,
@@ -207,18 +215,12 @@ const styles = StyleSheet.create({
     fontSize: 60,
     fontWeight: '700',
     color: colors.gold,
-    textShadowColor: colors.gold,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
   },
   hoursUnit: {
     fontSize: 24,
     fontWeight: '500',
     color: colors.gold + 'CC',
     marginLeft: spacing.xs,
-    textShadowColor: colors.gold + 'CC',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
   },
   hoursLabel: {
     color: colors.mutedForeground,
@@ -276,5 +278,23 @@ const styles = StyleSheet.create({
   },
   activitiesTitle: {
     color: colors.foreground,
+  },
+  activitiesButton: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    borderRadius: borderRadius.lg,
+    backgroundColor: 'transparent',
+    gap: spacing.sm,
+  },
+  activitiesButtonText: {
+    color: colors.gold,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

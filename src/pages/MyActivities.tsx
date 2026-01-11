@@ -8,6 +8,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { TextComponent } from '@/components/ui/text';
 import { Card, CardContent } from '@/components/ui/card';
+import { AppBar } from '@/components/ui/app-bar';
 import { Loading } from '@/components/ui/loading';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -58,6 +59,10 @@ export default function MyActivities() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('hours');
+  
+  // Check if we can go back (only show back button if navigated from stack, not from bottom tab)
+  const routeName = navigation.getState()?.routes?.[navigation.getState()?.index || 0]?.name;
+  const canGoBack = navigation.canGoBack() && routeName !== 'ActivitiesTab';
   const [hourLogs, setHourLogs] = useState<WorkHoursLog[]>([]);
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -508,16 +513,7 @@ export default function MyActivities() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-left" size={24} color={colors.foreground} />
-        </Pressable>
-        <TextComponent variant="h2" style={styles.headerTitle}>
-          {t('myActivities.title')}
-        </TextComponent>
-        <View style={styles.headerSpacer} />
-      </View>
-
+      <AppBar showBackButton={canGoBack} />
       <Tabs value={activeTab} onValueChange={setActiveTab} tabs={tabs}>
         {activeTab === 'hours' && renderHoursTab()}
         {activeTab === 'materials' && renderMaterialsTab()}
@@ -532,24 +528,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    padding: spacing.xs,
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    color: colors.foreground,
-  },
-  headerSpacer: {
-    width: 40,
-  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -562,13 +540,17 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: spacing.md,
+    paddingTop: 100, // Space for blurred app bar
     gap: spacing.md,
   },
   card: {
     marginBottom: spacing.md,
   },
   cardContent: {
-    padding: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.md,
   },
   cardHeader: {
     flexDirection: 'row',

@@ -9,6 +9,7 @@ import { Tabs } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { TextComponent } from '@/components/ui/text';
 import { Card, CardContent } from '@/components/ui/card';
+import { AppBar } from '@/components/ui/app-bar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -379,18 +380,11 @@ export default function Settings() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <AppBar />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <TextComponent variant="h1" style={styles.headerTitle}>
-            {t('profile.title')}
-          </TextComponent>
-          <TextComponent variant="body" style={styles.headerSubtitle}>
-            {t('profile.subtitle')}
-          </TextComponent>
-        </View>
 
         {/* User Info Card */}
         <Card style={styles.card}>
@@ -414,33 +408,41 @@ export default function Settings() {
                 <TextComponent variant="caption" style={styles.infoLabel}>
                   {t('profile.name')}
                 </TextComponent>
-                <TextComponent variant="body" style={styles.infoValue}>
-                  {userName}
-                </TextComponent>
+                <View style={styles.infoValueContainer}>
+                  <TextComponent variant="body" style={styles.infoValue}>
+                    {userName}
+                  </TextComponent>
+                </View>
               </View>
               <View style={styles.infoRow}>
                 <TextComponent variant="caption" style={styles.infoLabel}>
                   {t('profile.surname')}
                 </TextComponent>
-                <TextComponent variant="body" style={styles.infoValue}>
-                  {userSurname}
-                </TextComponent>
+                <View style={styles.infoValueContainer}>
+                  <TextComponent variant="body" style={styles.infoValue}>
+                    {userSurname}
+                  </TextComponent>
+                </View>
               </View>
               <View style={styles.infoRow}>
                 <TextComponent variant="caption" style={styles.infoLabel}>
                   {t('profile.phone')}
                 </TextComponent>
-                <TextComponent variant="body" style={styles.infoValue}>
-                  {userPhone}
-                </TextComponent>
+                <View style={styles.infoValueContainer}>
+                  <TextComponent variant="body" style={styles.infoValue}>
+                    {userPhone}
+                  </TextComponent>
+                </View>
               </View>
               <View style={styles.infoRow}>
                 <TextComponent variant="caption" style={styles.infoLabel}>
                   {t('profile.email')}
                 </TextComponent>
-                <TextComponent variant="body" style={styles.infoValue}>
-                  {userEmail}
-                </TextComponent>
+                <View style={styles.infoValueContainer}>
+                  <TextComponent variant="body" style={styles.infoValue}>
+                    {userEmail}
+                  </TextComponent>
+                </View>
               </View>
             </View>
           </CardContent>
@@ -466,49 +468,61 @@ export default function Settings() {
                           <TextComponent variant="caption" style={styles.infoLabel}>
                             {t('profile.contractType')}
                           </TextComponent>
-                          <TextComponent variant="body" style={styles.infoValue}>
-                            {contractData.contractType}
-                          </TextComponent>
+                          <View style={styles.infoValueContainer}>
+                            <TextComponent variant="body" style={styles.infoValue}>
+                              {contractData.contractType}
+                            </TextComponent>
+                          </View>
                         </View>
                         <View style={styles.infoRow}>
                           <TextComponent variant="caption" style={styles.infoLabel}>
                             {t('profile.startDate')}
                           </TextComponent>
-                          <TextComponent variant="body" style={styles.infoValue}>
-                            {contractData.startDate}
-                          </TextComponent>
+                          <View style={styles.infoValueContainer}>
+                            <TextComponent variant="body" style={styles.infoValue}>
+                              {contractData.startDate}
+                            </TextComponent>
+                          </View>
                         </View>
                         <View style={styles.infoRow}>
                           <TextComponent variant="caption" style={styles.infoLabel}>
                             {t('profile.position')}
                           </TextComponent>
-                          <TextComponent variant="body" style={styles.infoValue}>
-                            {contractData.position}
-                          </TextComponent>
+                          <View style={styles.infoValueContainer}>
+                            <TextComponent variant="body" style={styles.infoValue}>
+                              {contractData.position}
+                            </TextComponent>
+                          </View>
                         </View>
                         <View style={styles.infoRow}>
                           <TextComponent variant="caption" style={styles.infoLabel}>
                             {t('profile.department')}
                           </TextComponent>
-                          <TextComponent variant="body" style={styles.infoValue}>
-                            {contractData.department}
-                          </TextComponent>
+                          <View style={styles.infoValueContainer}>
+                            <TextComponent variant="body" style={styles.infoValue}>
+                              {contractData.department}
+                            </TextComponent>
+                          </View>
                         </View>
                         <View style={styles.infoRow}>
                           <TextComponent variant="caption" style={styles.infoLabel}>
                             {t('profile.salary')}
                           </TextComponent>
-                          <TextComponent variant="body" style={[styles.infoValue, styles.goldText]}>
-                            {contractData.salary}
-                          </TextComponent>
+                          <View style={styles.infoValueContainer}>
+                            <TextComponent variant="body" style={{ ...styles.infoValue, ...styles.goldText }}>
+                              {contractData.salary}
+                            </TextComponent>
+                          </View>
                         </View>
                         <View style={styles.infoRow}>
                           <TextComponent variant="caption" style={styles.infoLabel}>
                             {t('profile.workingHours')}
                           </TextComponent>
-                          <TextComponent variant="body" style={styles.infoValue}>
-                            {contractData.workingHours}
-                          </TextComponent>
+                          <View style={styles.infoValueContainer}>
+                            <TextComponent variant="body" style={styles.infoValue}>
+                              {contractData.workingHours}
+                            </TextComponent>
+                          </View>
                         </View>
                       </View>
                     </CardContent>
@@ -691,8 +705,7 @@ export default function Settings() {
               {t('profile.accountSecurity') || 'Account Security'}
             </TextComponent>
             <View style={styles.securityActions}>
-              <Button
-                variant="outline"
+              <Pressable
                 style={styles.securityButton}
                 onPress={handlePasswordReset}
                 disabled={resetPasswordLoading}
@@ -705,19 +718,18 @@ export default function Settings() {
                 <TextComponent variant="body" style={styles.securityButtonText}>
                   {t('profile.resetPassword') || 'Reset Password'}
                 </TextComponent>
-              </Button>
+              </Pressable>
 
               <AlertDialog>
                 <AlertDialogTrigger>
-                  <Button
-                    variant="outline"
+                  <Pressable
                     style={[styles.securityButton, styles.deleteButton]}
                   >
                     <Icon name="delete" size={20} color={colors.destructive} />
-                    <TextComponent variant="body" style={[styles.securityButtonText, styles.deleteButtonText]}>
+                    <TextComponent variant="body" style={{ ...styles.securityButtonText, ...styles.deleteButtonText }}>
                       {t('profile.deleteAccount') || 'Delete Account'}
                     </TextComponent>
-                  </Button>
+                  </Pressable>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -745,8 +757,7 @@ export default function Settings() {
         {/* Logout Button */}
         <Card style={styles.card}>
           <CardContent style={styles.cardContent}>
-            <Button
-              variant="outline"
+            <Pressable
               style={styles.logoutButton}
               onPress={handleLogout}
             >
@@ -754,7 +765,7 @@ export default function Settings() {
               <TextComponent variant="body" style={styles.logoutButtonText}>
                 {t('profile.logout')}
               </TextComponent>
-            </Button>
+            </Pressable>
           </CardContent>
         </Card>
       </ScrollView>
@@ -769,6 +780,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingTop: 100, // Space for blurred app bar
   },
   header: {
     marginBottom: spacing.lg,
@@ -784,7 +796,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   userCardContent: {
-    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
   },
   userHeader: {
     flexDirection: 'row',
@@ -809,17 +824,30 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    gap: spacing.md,
+    minHeight: 24,
   },
   infoLabel: {
     color: colors.mutedForeground,
+    flexShrink: 0,
+    minWidth: 100,
+    maxWidth: 120,
+  },
+  infoValueContainer: {
+    flex: 1,
+    alignItems: 'flex-end',
+    minWidth: 0,
+    flexShrink: 1,
+    paddingLeft: spacing.sm,
   },
   infoValue: {
     color: colors.foreground,
     fontWeight: '500',
+    textAlign: 'right',
   },
   goldText: {
     color: colors.gold,
@@ -836,7 +864,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cardContent: {
-    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
   },
   sectionTitle: {
     color: colors.foreground,
@@ -932,37 +963,49 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   securityButton: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    borderRadius: borderRadius.lg,
+    backgroundColor: 'transparent',
+    gap: spacing.sm,
     minHeight: 48,
   },
   securityButtonText: {
     color: colors.gold,
-    flexShrink: 1,
+    fontSize: 16,
+    fontWeight: '600',
   },
   deleteButton: {
     borderColor: colors.destructive,
   },
   deleteButtonText: {
     color: colors.destructive,
-    flexShrink: 1,
+    fontSize: 16,
+    fontWeight: '600',
   },
   logoutButton: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    borderColor: colors.destructive,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    borderWidth: 2,
+    borderColor: colors.destructive,
+    borderRadius: borderRadius.lg,
+    backgroundColor: 'transparent',
+    gap: spacing.sm,
     minHeight: 48,
   },
   logoutButtonText: {
     color: colors.destructive,
-    flexShrink: 1,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

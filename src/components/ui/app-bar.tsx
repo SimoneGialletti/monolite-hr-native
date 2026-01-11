@@ -1,0 +1,215 @@
+import React, { useState } from 'react';
+import { View, StyleSheet, ViewStyle, Pressable, Modal } from 'react-native';
+import { BlurView } from '@react-native-community/blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { colors, spacing } from '@/theme';
+import { TextComponent } from './text';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface AppBarProps {
+  style?: ViewStyle;
+  blurType?: 'dark' | 'light' | 'xlight';
+  blurAmount?: number;
+  showBackButton?: boolean;
+  onBackPress?: () => void;
+}
+
+export const AppBar: React.FC<AppBarProps> = ({
+  style,
+  blurType = 'dark',
+  blurAmount = 20,
+  showBackButton = false,
+  onBackPress,
+}) => {
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
+  const { t } = useTranslation();
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  const handleLogout = async () => {
+    setMenuVisible(false);
+    await supabase.auth.signOut();
+    navigation.navigate('Auth');
+  };
+
+  return (
+    <>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: insets.top,
+          },
+          style,
+        ]}
+      >
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType={blurType}
+          blurAmount={blurAmount}
+          reducedTransparencyFallbackColor={colors.card}
+        />
+        <View style={styles.content}>
+          {/* Left: Hamburger Menu or Back Button */}
+          <View style={styles.leftSection}>
+            {showBackButton ? (
+              <Pressable onPress={onBackPress || (() => navigation.goBack())} style={styles.iconButton}>
+                <Icon name="arrow-left" size={24} color={colors.foreground} />
+              </Pressable>
+            ) : (
+              <Pressable onPress={() => setMenuVisible(true)} style={styles.iconButton}>
+                <Icon name="menu" size={24} color={colors.foreground} />
+              </Pressable>
+            )}
+          </View>
+
+          {/* Center: Logo */}
+          <View style={styles.centerSection}>
+            <TextComponent variant="h3" style={styles.logo}>
+              Monolite HR
+            </TextComponent>
+          </View>
+
+          {/* Right: Notifications */}
+          <View style={styles.rightSection}>
+            <Pressable style={styles.iconButton}>
+              <Icon name="bell-outline" size={24} color={colors.foreground} />
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {/* Hamburger Menu Modal */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <TextComponent variant="h3" style={styles.modalTitle}>
+                {t('common.menu')}
+              </TextComponent>
+              <Pressable onPress={() => setMenuVisible(false)} style={styles.closeButton}>
+                <Icon name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.menuSection}>
+                <TextComponent variant="body" style={styles.menuSectionTitle}>
+                  {t('settings.language')}
+                </TextComponent>
+                <LanguageSwitcher />
+              </View>
+
+              <View style={styles.menuSection}>
+                <Pressable style={styles.logoutButton} onPress={handleLogout}>
+                  <Icon name="logout" size={20} color={colors.destructive} />
+                  <TextComponent variant="body" style={styles.logoutText}>
+                    {t('profile.logout')}
+                  </TextComponent>
+                </Pressable>
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    overflow: 'hidden',
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 56,
+  },
+  leftSection: {
+    width: 40,
+    alignItems: 'flex-start',
+  },
+  centerSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightSection: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
+  iconButton: {
+    padding: spacing.xs,
+  },
+  logo: {
+    color: colors.gold,
+    fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    maxHeight: '50%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  modalTitle: {
+    color: colors.foreground,
+  },
+  closeButton: {
+    padding: spacing.xs,
+  },
+  modalBody: {
+    gap: spacing.xl,
+  },
+  menuSection: {
+    gap: spacing.md,
+  },
+  menuSectionTitle: {
+    color: colors.mutedForeground,
+    marginBottom: spacing.sm,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.destructive,
+    borderRadius: 12,
+  },
+  logoutText: {
+    color: colors.destructive,
+    fontWeight: '600',
+  },
+});
