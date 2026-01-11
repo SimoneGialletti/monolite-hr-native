@@ -343,7 +343,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   form: {
-    gap: spacing.md,
+    padding: spacing.lg,
+    gap: spacing.lg,
   },
   loadingText: {
     color: colors.mutedForeground,

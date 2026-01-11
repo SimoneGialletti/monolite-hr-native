@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, spacing, borderRadius, goldGlow } from '@/theme';
 import { TextComponent } from './text';
 
 export interface Tab {
   value: string;
   label: string;
+  icon?: string;
 }
 
 export interface TabsProps {
@@ -32,6 +34,14 @@ export const Tabs: React.FC<TabsProps> = ({ value, onValueChange, tabs, children
               style={[styles.tab, isActive && styles.activeTab]}
               onPress={() => onValueChange(tab.value)}
             >
+              {tab.icon && (
+                <Icon
+                  name={tab.icon}
+                  size={16}
+                  color={isActive ? colors.gold : colors.mutedForeground}
+                  style={styles.tabIcon}
+                />
+              )}
               <TextComponent
                 variant="body"
                 style={[styles.tabText, isActive && styles.activeTabText]}
@@ -74,11 +84,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginRight: spacing.sm,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
+  },
+  tabIcon: {
+    marginRight: spacing.xs,
   },
   activeTab: {
     borderBottomColor: colors.gold,

@@ -8,12 +8,16 @@
 
 /* Begin PBXBuildFile section */
 		00E356F31AD99517003FC87E /* MonoliteHRNativeTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* MonoliteHRNativeTests.m */; };
-		0C80B921A6F3F58F76C31292 /* libPods-MonoliteHRNative.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-MonoliteHRNative.a */; };
+		1070F6C6EE15A132CBD2EEB9 /* libPods-MonoliteHRNative.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C868E46225159513E24372B3 /* libPods-MonoliteHRNative.a */; };
 		13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.mm */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
-		7699B88040F8A987B510C191 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 19F6CBCC0A4E27FBF8BF4A61 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a */; };
+		23F6C1DF6906140333D9A942 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D9B7DE3D562BBC9DB111BBD0 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a */; };
+		2CB530C8963042DA99F171C4 /* Poppins-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F2503AD53EFC4ED89C7BB880 /* Poppins-Regular.ttf */; };
+		485A2F882FEF40BF81364CE3 /* Poppins-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 217F3CA3B5324910A3C897CC /* Poppins-SemiBold.ttf */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		C48183BB6D5D443E9ED2F821 /* Poppins-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3D4272CF26784BCC80BD834D /* Poppins-Bold.ttf */; };
+		EC9FD2365A134942B087D8D8 /* Poppins-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CC015B868A40474F9D3B521E /* Poppins-Medium.ttf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,15 +40,19 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = MonoliteHRNative/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MonoliteHRNative/Info.plist; sourceTree = "<group>"; };
 		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = MonoliteHRNative/main.m; sourceTree = "<group>"; };
-	    13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = MonoliteHRNative/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		19F6CBCC0A4E27FBF8BF4A61 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MonoliteHRNative-MonoliteHRNativeTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3B4392A12AC88292D35C810B /* Pods-MonoliteHRNative.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative.debug.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative.debug.xcconfig"; sourceTree = "<group>"; };
-		5709B34CF0A7D63546082F79 /* Pods-MonoliteHRNative.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative.release.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative.release.xcconfig"; sourceTree = "<group>"; };
-		5B7EB9410499542E8C5724F5 /* Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig"; sourceTree = "<group>"; };
-		5DCACB8F33CDC322A6C60F78 /* libPods-MonoliteHRNative.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MonoliteHRNative.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = MonoliteHRNative/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		217F3CA3B5324910A3C897CC /* Poppins-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-SemiBold.ttf"; path = "MonoliteHRNative/Fonts/Poppins-SemiBold.ttf"; sourceTree = "<group>"; };
+		378CAC489009D2A6E76F9959 /* Pods-MonoliteHRNative.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative.debug.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative.debug.xcconfig"; sourceTree = "<group>"; };
+		3D4272CF26784BCC80BD834D /* Poppins-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Bold.ttf"; path = "MonoliteHRNative/Fonts/Poppins-Bold.ttf"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = MonoliteHRNative/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		89C6BE57DB24E9ADA2F236DE /* Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig"; sourceTree = "<group>"; };
+		A8F88E81D625532855A2524D /* Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig"; sourceTree = "<group>"; };
+		C2BD0D7DB954A91782B14A6A /* Pods-MonoliteHRNative.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative.release.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative.release.xcconfig"; sourceTree = "<group>"; };
+		C868E46225159513E24372B3 /* libPods-MonoliteHRNative.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MonoliteHRNative.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CC015B868A40474F9D3B521E /* Poppins-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Medium.ttf"; path = "MonoliteHRNative/Fonts/Poppins-Medium.ttf"; sourceTree = "<group>"; };
+		D9B7DE3D562BBC9DB111BBD0 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-MonoliteHRNative-MonoliteHRNativeTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		F2503AD53EFC4ED89C7BB880 /* Poppins-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "Poppins-Regular.ttf"; path = "MonoliteHRNative/Fonts/Poppins-Regular.ttf"; sourceTree = "<group>"; };
+		F789801002EE8FB5D7C154B8 /* Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig"; path = "Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,7 +60,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7699B88040F8A987B510C191 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a in Frameworks */,
+				23F6C1DF6906140333D9A942 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,7 +68,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C80B921A6F3F58F76C31292 /* libPods-MonoliteHRNative.a in Frameworks */,
+				1070F6C6EE15A132CBD2EEB9 /* libPods-MonoliteHRNative.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,8 +110,8 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5DCACB8F33CDC322A6C60F78 /* libPods-MonoliteHRNative.a */,
-				19F6CBCC0A4E27FBF8BF4A61 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a */,
+				C868E46225159513E24372B3 /* libPods-MonoliteHRNative.a */,
+				D9B7DE3D562BBC9DB111BBD0 /* libPods-MonoliteHRNative-MonoliteHRNativeTests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -124,6 +132,7 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+				936B483062864423BC68FF9F /* Resources */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -139,13 +148,25 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		936B483062864423BC68FF9F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				CC015B868A40474F9D3B521E /* Poppins-Medium.ttf */,
+				F2503AD53EFC4ED89C7BB880 /* Poppins-Regular.ttf */,
+				3D4272CF26784BCC80BD834D /* Poppins-Bold.ttf */,
+				217F3CA3B5324910A3C897CC /* Poppins-SemiBold.ttf */,
+			);
+			name = Resources;
+			path = "";
+			sourceTree = "<group>";
+		};
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				3B4392A12AC88292D35C810B /* Pods-MonoliteHRNative.debug.xcconfig */,
-				5709B34CF0A7D63546082F79 /* Pods-MonoliteHRNative.release.xcconfig */,
-				5B7EB9410499542E8C5724F5 /* Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig */,
-				89C6BE57DB24E9ADA2F236DE /* Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig */,
+				378CAC489009D2A6E76F9959 /* Pods-MonoliteHRNative.debug.xcconfig */,
+				C2BD0D7DB954A91782B14A6A /* Pods-MonoliteHRNative.release.xcconfig */,
+				F789801002EE8FB5D7C154B8 /* Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig */,
+				A8F88E81D625532855A2524D /* Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -157,12 +178,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 00E357021AD99517003FC87E /* Build configuration list for PBXNativeTarget "MonoliteHRNativeTests" */;
 			buildPhases = (
-				A55EABD7B0C7F3A422A6CC61 /* [CP] Check Pods Manifest.lock */,
+				6B8C1A34A3535A21851BDF67 /* [CP] Check Pods Manifest.lock */,
 				00E356EA1AD99517003FC87E /* Sources */,
 				00E356EB1AD99517003FC87E /* Frameworks */,
 				00E356EC1AD99517003FC87E /* Resources */,
-				C59DA0FBD6956966B86A3779 /* [CP] Embed Pods Frameworks */,
-				F6A41C54EA430FDDC6A6ED99 /* [CP] Copy Pods Resources */,
+				473CE9C039CA315B48E0596C /* [CP] Embed Pods Frameworks */,
+				A8516B310CAD0E205D5E3F45 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -178,13 +199,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "MonoliteHRNative" */;
 			buildPhases = (
-				C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */,
+				5C37A2F325158D1777DE0452 /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
-				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
+				C54ADF38BBE7611C2ACAE320 /* [CP] Embed Pods Frameworks */,
+				D63871923B5396855F4A57E8 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -245,6 +266,10 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				EC9FD2365A134942B087D8D8 /* Poppins-Medium.ttf in Resources */,
+				2CB530C8963042DA99F171C4 /* Poppins-Regular.ttf in Resources */,
+				C48183BB6D5D443E9ED2F821 /* Poppins-Bold.ttf in Resources */,
+				485A2F882FEF40BF81364CE3 /* Poppins-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,46 +292,24 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */ = {
+		473CE9C039CA315B48E0596C /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		A55EABD7B0C7F3A422A6CC61 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-MonoliteHRNative-MonoliteHRNativeTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
+		5C37A2F325158D1777DE0452 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -328,41 +331,29 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C59DA0FBD6956966B86A3779 /* [CP] Embed Pods Frameworks */ = {
+		6B8C1A34A3535A21851BDF67 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			name = "[CP] Embed Pods Frameworks";
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-MonoliteHRNative-MonoliteHRNativeTests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests-frameworks.sh\"\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		E235C05ADACE081382539298 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		F6A41C54EA430FDDC6A6ED99 /* [CP] Copy Pods Resources */ = {
+		A8516B310CAD0E205D5E3F45 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -377,6 +368,40 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative-MonoliteHRNativeTests/Pods-MonoliteHRNative-MonoliteHRNativeTests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C54ADF38BBE7611C2ACAE320 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D63871923B5396855F4A57E8 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-MonoliteHRNative/Pods-MonoliteHRNative-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -412,9 +437,10 @@
 /* Begin XCBuildConfiguration section */
 		00E356F61AD99517003FC87E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5B7EB9410499542E8C5724F5 /* Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig */;
+			baseConfigurationReference = F789801002EE8FB5D7C154B8 /* Pods-MonoliteHRNative-MonoliteHRNativeTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = RC74YNJ539;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -439,10 +465,11 @@
 		};
 		00E356F71AD99517003FC87E /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 89C6BE57DB24E9ADA2F236DE /* Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig */;
+			baseConfigurationReference = A8F88E81D625532855A2524D /* Pods-MonoliteHRNative-MonoliteHRNativeTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				COPY_PHASE_STRIP = NO;
+				DEVELOPMENT_TEAM = RC74YNJ539;
 				INFOPLIST_FILE = MonoliteHRNativeTests/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -463,11 +490,12 @@
 		};
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B4392A12AC88292D35C810B /* Pods-MonoliteHRNative.debug.xcconfig */;
+			baseConfigurationReference = 378CAC489009D2A6E76F9959 /* Pods-MonoliteHRNative.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RC74YNJ539;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = MonoliteHRNative/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -490,11 +518,12 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5709B34CF0A7D63546082F79 /* Pods-MonoliteHRNative.release.xcconfig */;
+			baseConfigurationReference = C2BD0D7DB954A91782B14A6A /* Pods-MonoliteHRNative.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RC74YNJ539;
 				INFOPLIST_FILE = MonoliteHRNative/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -517,6 +546,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CC = "";
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -544,6 +574,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
+				CXX = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
@@ -563,6 +594,8 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				LD = "";
+				LDPLUSPLUS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -582,7 +615,13 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				USE_HERMES = true;
 			};
 			name = Debug;
 		};
@@ -590,6 +629,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CC = "";
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_CXX_LIBRARY = "libc++";
@@ -617,6 +657,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
+				CXX = "";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
@@ -629,6 +670,8 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;
+				LD = "";
+				LDPLUSPLUS = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
 					"$(inherited)",
@@ -647,7 +690,13 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
+				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

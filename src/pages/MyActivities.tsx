@@ -281,9 +281,9 @@ export default function MyActivities() {
   };
 
   const tabs = [
-    { value: 'hours', label: t('myActivities.hours') },
-    { value: 'materials', label: t('myActivities.materials') },
-    { value: 'leave', label: t('myActivities.leave') },
+    { value: 'hours', label: t('myActivities.hours'), icon: 'clock-outline' },
+    { value: 'materials', label: t('myActivities.materials'), icon: 'package-variant' },
+    { value: 'leave', label: t('myActivities.leave'), icon: 'calendar' },
   ];
 
   const renderHoursTab = () => {

@@ -36,5 +36,116 @@ target 'MonoliteHRNative' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Fix for react-native-reanimated build issues - create stub coroutine header
+    # RN 0.74 doesn't include Folly coroutines, but react-native-reanimated needs the header
+    folly_paths = [
+      File.join(installer.sandbox.root, 'RCT-Folly', 'folly', 'experimental', 'coro'),
+      File.join(installer.sandbox.root, 'Headers', 'Public', 'RCT-Folly', 'folly', 'experimental', 'coro'),
+      File.join(installer.sandbox.root, 'Headers', 'Public', 'folly', 'experimental', 'coro')
+    ]
+    
+    stub_header_content = <<-EOF
+#pragma once
+#include <coroutine>
+#include <type_traits>
+// Stub header for Folly coroutines (not available in RN 0.74)
+// This is a workaround for react-native-reanimated compatibility
+namespace folly {
+namespace coro {
+  // Stub types needed by react-native-reanimated
+  struct suspend_never {
+    bool await_ready() const noexcept { return true; }
+    void await_suspend(std::coroutine_handle<>) const noexcept {}
+    void await_resume() const noexcept {}
+  };
+  
+  template<typename Promise = void>
+  using coroutine_handle = std::coroutine_handle<Promise>;
+  
+  // Stub for detect_promise_return_object_eager_conversion
+  // Folly calls this as a function, so we provide a function template
+  template<typename T>
+  constexpr bool detect_promise_return_object_eager_conversion() {
+    return false;
+  }
+  
+  // Also provide the struct version for compatibility
+  template<typename T>
+  struct detect_promise_return_object_eager_conversion_trait : std::integral_constant<bool, false> {};
+}
+}
+EOF
+    
+    folly_paths.each do |path|
+      FileUtils.mkdir_p(path)
+      File.write(File.join(path, 'Coroutine.h'), stub_header_content)
+    end
+    
+    # Create stub Hermes Registration.h header (RN 0.74 uses inspector-modern, but reanimated expects inspector)
+    hermes_paths = [
+      File.join(installer.sandbox.root, 'Headers', 'Public', 'hermes-engine', 'hermes', 'inspector', 'chrome'),
+      File.join(installer.sandbox.root, 'hermes-engine', 'destroot', 'include', 'hermes', 'inspector', 'chrome')
+    ]
+    
+    registration_header_content = <<-EOF
+#pragma once
+#ifdef HERMES_ENABLE_DEBUGGER
+#include <memory>
+#include <string>
+#include <hermes/hermes.h>
+#include <hermes/inspector/RuntimeAdapter.h>
+
+namespace facebook {
+namespace hermes {
+namespace inspector {
+namespace chrome {
+  using DebugSessionToken = int;
+  extern DebugSessionToken enableDebugging(
+      std::unique_ptr<inspector_modern::RuntimeAdapter> adapter,
+      const std::string& title);
+  extern void disableDebugging(DebugSessionToken session);
+} // namespace chrome
+} // namespace inspector
+} // namespace hermes
+} // namespace facebook
+#endif // HERMES_ENABLE_DEBUGGER
+EOF
+    
+    hermes_paths.each do |path|
+      FileUtils.mkdir_p(path)
+      registration_file = File.join(path, 'Registration.h')
+      File.write(registration_file, registration_header_content) unless File.exist?(registration_file)
+    end
+    
+    # Fix C++ settings and header search paths for all targets
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
+        config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+        
+        # Add Yoga private headers path and fix Hermes paths if target needs it
+        if target.name.include?('Yoga') || target.name.include?('Reanimated')
+          header_paths = config.build_settings['HEADER_SEARCH_PATHS'] || ['$(inherited)']
+          header_paths = header_paths.is_a?(String) ? header_paths.split(' ') : header_paths
+          yoga_private_path = File.join(installer.sandbox.root, 'Headers', 'Private', 'Yoga')
+          header_paths << "\"#{yoga_private_path}\"" unless header_paths.any? { |p| p.include?('Yoga') }
+          
+          # Add Hermes engine headers path
+          hermes_path = File.join(installer.sandbox.root, 'hermes-engine', 'destroot', 'include')
+          header_paths << "\"#{hermes_path}\"" unless header_paths.any? { |p| p.include?('hermes-engine') }
+          
+          config.build_settings['HEADER_SEARCH_PATHS'] = header_paths
+        end
+        
+        # Fix C++20 template deduction issues by ensuring proper standard library includes
+        if target.name == 'RNReanimated'
+          flags = config.build_settings['OTHER_CPLUSPLUSFLAGS'] || ['$(OTHER_CFLAGS)']
+          flags = flags.is_a?(String) ? flags.split(' ') : flags
+          flags << '-std=c++20' unless flags.include?('-std=c++20')
+          config.build_settings['OTHER_CPLUSPLUSFLAGS'] = flags
+        end
+      end
+    end
   end
 end

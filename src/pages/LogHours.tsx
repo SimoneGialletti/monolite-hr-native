@@ -1296,10 +1296,11 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   card: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   cardContent: {
     padding: spacing.lg,
+    gap: spacing.lg,
   },
   addButton: {
     flexDirection: 'row',
@@ -1318,7 +1319,7 @@ const styles = StyleSheet.create({
   },
   workEntryContent: {
     padding: spacing.lg,
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   workEntryHeader: {
     flexDirection: 'row',

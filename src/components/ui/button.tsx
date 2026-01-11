@@ -57,6 +57,7 @@ export const Button = React.forwardRef<any, ButtonProps>(
         justifyContent: 'center',
         flexDirection: 'row',
         gap: spacing.sm,
+        minWidth: 0,
       };
 
       // Size styles
@@ -170,6 +171,9 @@ export const Button = React.forwardRef<any, ButtonProps>(
       ];
     };
 
+    // Check if children is a string or contains React elements
+    const isStringChildren = typeof children === 'string';
+    
     return (
       <AnimatedPressable
         ref={ref}
@@ -185,8 +189,10 @@ export const Button = React.forwardRef<any, ButtonProps>(
             size="small" 
             color={variant === 'outline' || variant === 'ghost' || variant === 'link' ? colors.gold : colors.primaryForeground} 
           />
-        ) : (
+        ) : isStringChildren ? (
           <Text style={getTextStyle()}>{children}</Text>
+        ) : (
+          children
         )}
       </AnimatedPressable>
     );

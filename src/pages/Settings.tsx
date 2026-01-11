@@ -536,6 +536,7 @@ export default function Settings() {
                             variant="outline"
                             size="sm"
                             onPress={() => openDocument(contractDoc.file_url)}
+                            style={{ flexShrink: 0 }}
                           >
                             <Icon name="eye" size={16} color={colors.gold} />
                             <TextComponent variant="caption" style={styles.viewButtonText}>
@@ -587,6 +588,7 @@ export default function Settings() {
                             variant="outline"
                             size="sm"
                             onPress={() => openDocument(item.file_url)}
+                            style={{ flexShrink: 0 }}
                           >
                             <Icon name="eye" size={16} color={colors.gold} />
                             <TextComponent variant="caption" style={styles.viewButtonText}>
@@ -634,7 +636,9 @@ export default function Settings() {
                               </TextComponent>
                             </View>
                           </View>
-                          {getStatusBadge(item.status, item.expiry_date)}
+                          <View style={{ flexShrink: 0 }}>
+                            {getStatusBadge(item.status, item.expiry_date)}
+                          </View>
                         </View>
                         <View style={styles.certificateMeta}>
                           <TextComponent variant="caption" style={styles.metaText}>
@@ -836,7 +840,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.foreground,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   contractInfo: {
     gap: spacing.md,
@@ -845,28 +849,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.md,
+    padding: spacing.lg,
     backgroundColor: colors.muted + '30',
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border + '80',
+    gap: spacing.md,
   },
   documentInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
   },
   documentText: {
     flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
   },
   documentName: {
     color: colors.foreground,
     fontWeight: '500',
+    flexWrap: 'wrap',
   },
   documentMeta: {
     color: colors.mutedForeground,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
   viewButtonText: {
     color: colors.gold,
@@ -876,27 +886,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
   certificateInfo: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.md,
     flex: 1,
+    minWidth: 0,
   },
   certificateText: {
     flex: 1,
+    minWidth: 0,
   },
   certificateName: {
     color: colors.foreground,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+    flexWrap: 'wrap',
   },
   certificateFileName: {
     color: colors.mutedForeground,
+    flexWrap: 'wrap',
   },
   certificateMeta: {
-    gap: spacing.xs,
-    marginBottom: spacing.md,
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
   metaText: {
     color: colors.mutedForeground,
@@ -914,21 +929,27 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   securityActions: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   securityButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 48,
   },
   securityButtonText: {
     color: colors.gold,
+    flexShrink: 1,
   },
   deleteButton: {
     borderColor: colors.destructive,
   },
   deleteButtonText: {
     color: colors.destructive,
+    flexShrink: 1,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -936,8 +957,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     borderColor: colors.destructive,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 48,
   },
   logoutButtonText: {
     color: colors.destructive,
+    flexShrink: 1,
   },
 });

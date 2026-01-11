@@ -2,36 +2,32 @@
  * Visual effects: shadows, glows, animations
  */
 
-import { colors } from './colors';
-
 /**
- * Gold glow shadow effect
- * Equivalent to: box-shadow: 0 0 12px hsl(var(--gold) / 0.4)
+ * Gold glow shadow effect (disabled)
  */
 export const goldGlow = {
-  shadowColor: colors.gold,
+  shadowColor: 'transparent',
   shadowOffset: {
     width: 0,
     height: 0,
   },
-  shadowOpacity: 0.4,
-  shadowRadius: 12,
-  elevation: 8, // Android
+  shadowOpacity: 0,
+  shadowRadius: 0,
+  elevation: 0,
 };
 
 /**
- * Intense gold glow shadow effect
- * Equivalent to: box-shadow: 0 0 20px hsl(var(--gold) / 0.8)
+ * Intense gold glow shadow effect (disabled)
  */
 export const goldGlowIntense = {
-  shadowColor: colors.gold,
+  shadowColor: 'transparent',
   shadowOffset: {
     width: 0,
     height: 0,
   },
-  shadowOpacity: 0.8,
-  shadowRadius: 20,
-  elevation: 12, // Android
+  shadowOpacity: 0,
+  shadowRadius: 0,
+  elevation: 0,
 };
 
 /**
