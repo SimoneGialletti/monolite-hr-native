@@ -1,18 +1,26 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { TextComponent } from '@/components/ui/text';
 import { colors, spacing } from '@/theme';
 
 export default function Communications() {
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <TextComponent variant="h1" style={styles.title}>
-          Communications Screen
+        <Icon name="message-outline" size={48} color={colors.gold} />
+        <TextComponent variant="h2" style={styles.title}>
+          {t('communications.title')}
         </TextComponent>
         <TextComponent variant="body" style={styles.subtitle}>
-          This screen will be implemented
+          {t('communications.noMessages')}
+        </TextComponent>
+        <TextComponent variant="caption" style={styles.description}>
+          {t('communications.noMessagesDesc')}
         </TextComponent>
       </View>
     </SafeAreaView>
@@ -32,9 +40,14 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.gold,
-    marginBottom: spacing.md,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   subtitle: {
+    color: colors.foreground,
+    marginBottom: spacing.xs,
+  },
+  description: {
     color: colors.mutedForeground,
     textAlign: 'center',
   },

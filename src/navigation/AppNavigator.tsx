@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors } from '@/theme';
 import { RootStackParamList, MainTabParamList } from './types';
 
@@ -32,6 +34,8 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Bottom Tab Navigator
 function MainTabs() {
+  const { t } = useTranslation();
+  
   return (
     <Tab.Navigator
       screenOptions={{
@@ -42,6 +46,13 @@ function MainTabs() {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
           borderTopWidth: 1,
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
         },
       }}
     >
@@ -49,28 +60,40 @@ function MainTabs() {
         name="HomeTab" 
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: t('navigation.home'),
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="home" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen 
         name="ActivitiesTab" 
         component={MyActivitiesScreen}
         options={{
-          tabBarLabel: 'Activities',
+          tabBarLabel: t('navigation.activities'),
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="clipboard-list" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen 
         name="MessagesTab" 
         component={CommunicationsScreen}
         options={{
-          tabBarLabel: 'Messages',
+          tabBarLabel: t('navigation.messages'),
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="message-outline" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen 
         name="ProfileTab" 
         component={SettingsScreen}
         options={{
-          tabBarLabel: 'Profile',
+          tabBarLabel: t('navigation.profile'),
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="account" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>
