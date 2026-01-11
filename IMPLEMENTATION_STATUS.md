@@ -69,7 +69,10 @@
 
 ### 2. Page Implementation (Priority: High)
 - [x] Auth page (sign in/sign up forms) - Fully implemented
-- [ ] Home page (dashboard)
+- [x] Home page (dashboard) - Fully implemented with today's hours and action cards
+- [x] Communications page - Implemented
+- [x] PendingInvitation page - Fully implemented
+- [x] LanguageSwitcher component - Implemented
 - [ ] LogHours page (complex form with work types)
 - [ ] MaterialRequest page (form)
 - [ ] LeaveRequest page (form with date picker)
