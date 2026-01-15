@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Tabs } from '@/components/ui/tabs';
@@ -70,13 +70,16 @@ export default function MyActivities() {
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
   const [isLoadingLeave, setIsLoadingLeave] = useState(false);
 
-  useEffect(() => {
-    if (user?.id) {
-      loadWorkHours();
-      loadLeaveRequests();
-      loadMaterialRequests();
-    }
-  }, [user]);
+  // Refetch data when screen comes into focus (e.g., after returning from LogHours)
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        loadWorkHours();
+        loadLeaveRequests();
+        loadMaterialRequests();
+      }
+    }, [user])
+  );
 
   const loadWorkHours = async () => {
     if (!user?.id) return;
@@ -514,11 +517,13 @@ export default function MyActivities() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppBar showBackButton={canGoBack} />
-      <Tabs value={activeTab} onValueChange={setActiveTab} tabs={tabs}>
-        {activeTab === 'hours' && renderHoursTab()}
-        {activeTab === 'materials' && renderMaterialsTab()}
-        {activeTab === 'leave' && renderLeaveTab()}
-      </Tabs>
+      <View style={styles.tabsContainer}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} tabs={tabs}>
+          {activeTab === 'hours' && renderHoursTab()}
+          {activeTab === 'materials' && renderMaterialsTab()}
+          {activeTab === 'leave' && renderLeaveTab()}
+        </Tabs>
+      </View>
     </SafeAreaView>
   );
 }
@@ -527,6 +532,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  tabsContainer: {
+    flex: 1,
+    marginTop: 100, // Space for blurred app bar
   },
   centerContainer: {
     flex: 1,
@@ -540,7 +549,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: spacing.md,
-    paddingTop: 100, // Space for blurred app bar
     gap: spacing.md,
   },
   card: {

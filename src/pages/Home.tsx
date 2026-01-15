@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/button';
@@ -25,9 +25,17 @@ const Home = () => {
       if (user.user_metadata?.name) {
         setUserName(user.user_metadata.name);
       }
-      loadTodayHours(user.id);
     }
   }, [user]);
+
+  // Refetch hours when screen comes into focus (e.g., after returning from LogHours)
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        loadTodayHours(user.id);
+      }
+    }, [user])
+  );
 
   const loadTodayHours = async (userId: string) => {
     try {
@@ -83,10 +91,10 @@ const Home = () => {
       >
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <TextComponent variant="h1" style={styles.title}>
+            <TextComponent variant="h3" style={styles.title}>
               {t('home.title')}, {userName}
             </TextComponent>
-            <TextComponent variant="body" style={styles.subtitle}>
+            <TextComponent variant="caption" style={styles.subtitle}>
               {t('home.subtitle')}
             </TextComponent>
           </View>
@@ -180,13 +188,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
-    paddingTop: spacing['3xl'], // Space for blurred app bar
+    paddingTop: spacing['3xl'] + spacing.lg, // Space for blurred app bar
     paddingBottom: spacing['3xl'], // Space for tab bar
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: spacing.md,
   },
   headerText: {
     flex: 1,
@@ -195,9 +204,13 @@ const styles = StyleSheet.create({
   title: {
     color: colors.foreground,
     marginBottom: spacing.xs,
+    fontSize: 20,
+    fontWeight: '600',
   },
   subtitle: {
     color: colors.mutedForeground,
+    fontSize: 14,
+    marginBottom: 0,
   },
   hoursCard: {
     marginBottom: spacing.xl,

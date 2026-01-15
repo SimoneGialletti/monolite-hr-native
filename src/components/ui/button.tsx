@@ -63,19 +63,19 @@ export const Button = React.forwardRef<any, ButtonProps>(
       // Size styles
       const sizeStyles: Record<string, ViewStyle> = {
         sm: {
-          height: 36,
+          minHeight: 36,
           paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
+          paddingVertical: spacing.xs,
         },
         default: {
-          height: 48,
+          minHeight: 48,
           paddingHorizontal: spacing.lg,
-          paddingVertical: spacing.md,
+          paddingVertical: spacing.sm,
         },
         lg: {
-          height: 56,
+          minHeight: 56,
           paddingHorizontal: spacing.xl,
-          paddingVertical: spacing.md,
+          paddingVertical: spacing.sm,
         },
         icon: {
           height: 40,
@@ -124,20 +124,27 @@ export const Button = React.forwardRef<any, ButtonProps>(
         fontSize: typography.fontSize.sm,
         fontWeight: typography.fontWeight.semibold,
         fontFamily: typography.fontFamily.semibold,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
+        lineHeight: typography.fontSize.sm * 1.2,
       };
 
       const sizeTextStyles: Record<string, TextStyle> = {
         sm: {
           fontSize: typography.fontSize.sm,
+          lineHeight: typography.fontSize.sm * 1.2,
         },
         default: {
           fontSize: typography.fontSize.sm,
+          lineHeight: typography.fontSize.sm * 1.2,
         },
         lg: {
           fontSize: typography.fontSize.base,
+          lineHeight: typography.fontSize.base * 1.2,
         },
         icon: {
           fontSize: typography.fontSize.sm,
+          lineHeight: typography.fontSize.sm * 1.2,
         },
       };
 
@@ -190,7 +197,9 @@ export const Button = React.forwardRef<any, ButtonProps>(
             color={variant === 'outline' || variant === 'ghost' || variant === 'link' ? colors.gold : colors.primaryForeground} 
           />
         ) : isStringChildren ? (
-          <Text style={getTextStyle()}>{children}</Text>
+          <Text style={getTextStyle()} numberOfLines={1} adjustsFontSizeToFit={false}>
+            {children}
+          </Text>
         ) : (
           children
         )}

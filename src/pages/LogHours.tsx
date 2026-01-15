@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, FlatList } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectOption } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import { SwitchComponent as Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { TextComponent } from '@/components/ui/text';
 import { Card, CardContent } from '@/components/ui/card';
@@ -1128,16 +1128,14 @@ export default function LogHours() {
           </CardContent>
         </Card>
 
-        <Card style={styles.card}>
-          <CardContent style={styles.cardContent}>
-            <Button variant="outline" onPress={addWorkEntry} style={styles.addButton}>
-              <Icon name="plus" size={20} color={colors.gold} />
-              <TextComponent variant="body" style={styles.addButtonText}>
-                {t('logHours.addWorkEntry')}
-              </TextComponent>
-            </Button>
-          </CardContent>
-        </Card>
+        <Pressable onPress={addWorkEntry} style={styles.addWorkEntryButton}>
+          <View style={styles.addWorkEntryIconContainer}>
+            <Icon name="plus" size={28} color={colors.gold} />
+          </View>
+          <TextComponent variant="h4" style={styles.addWorkEntryText}>
+            {t('logHours.addWorkEntry')}
+          </TextComponent>
+        </Pressable>
 
         {workEntries.map(renderWorkEntry)}
 
@@ -1151,7 +1149,7 @@ export default function LogHours() {
                       {t('logHours.alreadyLoggedToday')}
                     </TextComponent>
                     <TextComponent variant="h3" style={styles.loggedHoursTotal}>
-                      {totalLoggedHours.toFixed(1)}h
+                      {' '}{totalLoggedHours.toFixed(1)}h
                     </TextComponent>
                   </View>
                   {todayLoggedHours.map((entry, index) => (
@@ -1201,7 +1199,7 @@ export default function LogHours() {
                     {t('logHours.totalAfterSubmission')}
                   </TextComponent>
                   <TextComponent variant="h2" style={styles.totalAfterValue}>
-                    {(totalLoggedHours + getTotalHours()).toFixed(1)}h
+                    {' '}{(totalLoggedHours + getTotalHours()).toFixed(1)}h
                   </TextComponent>
                 </View>
               )}
@@ -1300,17 +1298,37 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     padding: spacing.lg,
-    gap: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
   },
-  addButton: {
+  addWorkEntryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderWidth: 2,
     borderColor: colors.gold,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
-  addButtonText: {
+  addWorkEntryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.gold + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addWorkEntryText: {
     color: colors.gold,
+    flex: 1,
   },
   workEntryCard: {
     borderWidth: 2,
@@ -1319,23 +1337,27 @@ const styles = StyleSheet.create({
   },
   workEntryContent: {
     padding: spacing.lg,
-    gap: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
+    gap: spacing.md,
   },
   workEntryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
   },
   workEntryTitle: {
     color: colors.gold,
+    fontSize: 18,
+    fontWeight: '600',
   },
   removeButton: {
     padding: spacing.xs,
   },
   rainSection: {
     gap: spacing.md,
-    paddingTop: spacing.sm,
   },
   rainHeader: {
     flexDirection: 'row',
@@ -1358,16 +1380,22 @@ const styles = StyleSheet.create({
   loggedHoursContainer: {
     backgroundColor: colors.background + '80',
     borderRadius: borderRadius.md,
-    padding: spacing.md,
+    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
     borderWidth: 1,
     borderColor: colors.gold + '30',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   loggedHoursHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    marginTop: spacing.xs,
+    gap: spacing.xs,
   },
   loggedHoursLabel: {
     color: colors.mutedForeground,
@@ -1381,7 +1409,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.sm,
+    padding: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.md,
     backgroundColor: colors.background,
     borderRadius: borderRadius.sm,
     borderWidth: 1,
@@ -1408,10 +1440,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: spacing.xl,
     marginBottom: spacing.lg,
   },
   summaryTitle: {
     color: colors.foreground,
+    fontSize: 18,
+    fontWeight: '600',
   },
   summaryTotal: {
     flexDirection: 'row',
@@ -1421,34 +1456,46 @@ const styles = StyleSheet.create({
   summaryTotalValue: {
     color: colors.gold,
     fontWeight: 'bold',
+    fontSize: 32,
   },
   summaryTotalUnit: {
     color: colors.mutedForeground,
   },
   totalAfterContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
     backgroundColor: colors.gold + '20',
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.gold + '50',
     marginBottom: spacing.lg,
+    gap: spacing.xs,
   },
   totalAfterLabel: {
     color: colors.foreground,
     fontWeight: '600',
+    fontSize: 16,
   },
   totalAfterValue: {
     color: colors.gold,
     fontWeight: 'bold',
+    fontSize: 24,
   },
   breakdownContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
-    padding: spacing.md,
+    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
     backgroundColor: colors.background + '80',
     borderRadius: borderRadius.md,
     marginBottom: spacing.md,
@@ -1477,7 +1524,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    padding: spacing.md,
+    padding: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
     backgroundColor: colors.gold + '20',
     borderRadius: borderRadius.md,
     borderWidth: 1,

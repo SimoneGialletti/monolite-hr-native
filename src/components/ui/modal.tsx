@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Modal, View, StyleSheet, Pressable, ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { colors, spacing, borderRadius } from '@/theme';
+
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export interface ModalProps {
   visible: boolean;
@@ -15,18 +19,49 @@ export const ModalComponent: React.FC<ModalProps> = ({
   children,
   containerStyle,
 }) => {
+  const backdropOpacity = useSharedValue(0);
+  const scale = useSharedValue(0.9);
+  const opacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (visible) {
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+      scale.value = withSpring(1, {
+        damping: 20,
+        stiffness: 90,
+      });
+      opacity.value = withTiming(1, { duration: 300 });
+    } else {
+      backdropOpacity.value = withTiming(0, { duration: 200 });
+      scale.value = withTiming(0.9, { duration: 200 });
+      opacity.value = withTiming(0, { duration: 200 });
+    }
+  }, [visible]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const containerAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="none"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={[styles.container, containerStyle]} onPress={(e) => e.stopPropagation()}>
+      <AnimatedPressable style={[styles.overlay, backdropStyle]} onPress={onClose}>
+        <AnimatedPressable
+          style={[styles.container, containerStyle, containerAnimatedStyle]}
+          onPress={(e) => e.stopPropagation()}
+        >
           {children}
-        </Pressable>
-      </Pressable>
+        </AnimatedPressable>
+      </AnimatedPressable>
     </Modal>
   );
 };
@@ -34,7 +69,7 @@ export const ModalComponent: React.FC<ModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },

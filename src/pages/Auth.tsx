@@ -4,15 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Toast from 'react-native-toast-message';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs } from '@/components/ui/tabs';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectOption } from '@/components/ui/select';
+import { CitySearchInput } from '@/components/ui/city-search-input';
 import { TextComponent } from '@/components/ui/text';
 import { supabase } from '@/integrations/supabase/client';
-import { colors, spacing, borderRadius, goldGlow } from '@/theme';
+import { colors, spacing, borderRadius } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Auth() {
@@ -29,10 +30,8 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
 
   // City search
-  const [citySearch, setCitySearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<string>('');
-  const [cities, setCities] = useState<SelectOption[]>([]);
-  const [cityOptions, setCityOptions] = useState<SelectOption[]>([]);
+  const [selectedCityLabel, setSelectedCityLabel] = useState<string>('');
 
   // Terms and Privacy Policy acceptance
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -68,36 +67,38 @@ export default function Auth() {
     }
   };
 
-  // Search cities
-  useEffect(() => {
-    if (citySearch.length > 2) {
-      const searchCities = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('cities_search')
-            .select('*')
-            .or(`city_name_lower.ilike.%${citySearch.toLowerCase()}%,full_location_name_lower.ilike.%${citySearch.toLowerCase()}%`)
-            .limit(10);
+  // Search cities function using RPC for better fuzzy matching
+  const searchCities = async (query: string) => {
+    try {
+      console.log('Searching cities with query:', query);
+      const { data, error } = await supabase
+        .rpc('search_cities', {
+          search_query: query,
+          result_limit: 20,
+        });
 
-          if (!error && data) {
-            const options: SelectOption[] = data.map((city: any) => ({
-              label: city.full_location_name || city.city_name,
-              value: city.id.toString(),
-            }));
-            setCityOptions(options);
-          }
-        } catch (error: any) {
-          if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
-            return;
-          }
-          console.error('Error searching cities:', error);
-        }
-      };
-      searchCities();
-    } else {
-      setCityOptions([]);
+      if (error) {
+        console.error('Supabase error searching cities:', error);
+        return [];
+      }
+
+      console.log('Cities search results:', data?.length || 0, 'results');
+
+      if (data && data.length > 0) {
+        return data.map((city: any) => ({
+          label: city.full_location_name || city.city_name,
+          value: city.id.toString(),
+        }));
+      }
+      return [];
+    } catch (error: any) {
+      if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
+        return [];
+      }
+      console.error('Error searching cities:', error);
+      return [];
     }
-  }, [citySearch]);
+  };
 
   const handleSignUp = async () => {
     if (!email || !password || !name || !surname || !phone || !selectedCity) {
@@ -255,10 +256,20 @@ export default function Auth() {
     }
   };
 
-  const tabs = [
+  const handleAppleSignIn = async () => {
+    // TODO: Implement Apple Sign In
+    // This would typically use @invertase/react-native-apple-authentication
+    // or a similar library to trigger the Apple sign-in flow
+    Toast.show({
+      type: 'info',
+      text1: 'Apple Sign In',
+      text2: 'Apple Sign In will be implemented soon',
+    });
+  };
+
+  const segmentedOptions = [
     { value: 'signin', label: t('auth.signIn') },
     { value: 'signup', label: t('auth.signUp') },
-    { value: 'reset', label: t('auth.reset') },
   ];
 
   return (
@@ -270,203 +281,218 @@ export default function Auth() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <Card style={styles.card}>
-              <CardHeader>
-                <View style={styles.iconContainer}>
-                  <View style={styles.iconCircle}>
-                    <TextComponent variant="h2" style={styles.iconText}>
-                      🏗️
+            {/* Icon */}
+            <View style={styles.iconContainer}>
+              <View style={styles.iconCircle}>
+                <Icon name="hard-hat" size={40} color={colors.foreground} />
+              </View>
+            </View>
+
+            {/* Title */}
+            <TextComponent variant="h1" style={styles.title}>
+              {t('auth.title')}
+            </TextComponent>
+
+            {/* Subtitle */}
+            <TextComponent variant="body" style={styles.subtitle}>
+              {t('auth.subtitle')}
+            </TextComponent>
+
+            {/* Segmented Control */}
+            <View style={styles.segmentedControlContainer}>
+              <SegmentedControl
+                value={activeTab}
+                onValueChange={setActiveTab}
+                options={segmentedOptions}
+              />
+            </View>
+
+            {/* Form */}
+            {activeTab === 'signin' && (
+              <View style={styles.form}>
+                <Input
+                  label={t('auth.email')}
+                  placeholder={t('auth.emailPlaceholder')}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+                <View style={styles.passwordContainer}>
+                  <View style={styles.passwordLabelRow}>
+                    <TextComponent variant="body" style={styles.passwordLabel}>
+                      {t('auth.password')}
                     </TextComponent>
+                    <Pressable onPress={handleResetPassword}>
+                      <TextComponent variant="body" style={styles.forgotPasswordLink}>
+                        {t('auth.forgotPassword')}
+                      </TextComponent>
+                    </Pressable>
                   </View>
+                  <Input
+                    placeholder={t('auth.password')}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoComplete="password"
+                    rightIcon={
+                      <Pressable onPress={() => setShowPassword(!showPassword)}>
+                        <Icon
+                          name={showPassword ? 'eye-off' : 'eye'}
+                          size={20}
+                          color={colors.mutedForeground}
+                        />
+                      </Pressable>
+                    }
+                    containerStyle={styles.passwordInputContainer}
+                  />
                 </View>
-                <CardTitle>
-                  <TextComponent variant="h2" style={styles.title}>
-                    {t('auth.title')}
-                  </TextComponent>
-                </CardTitle>
-                <CardDescription>
-                  <TextComponent variant="body" style={styles.subtitle}>
-                    {t('auth.subtitle')}
-                  </TextComponent>
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent>
-                <Tabs
-                  value={activeTab}
-                  onValueChange={setActiveTab}
-                  tabs={tabs}
+                <Button
+                  onPress={handleSignIn}
+                  loading={loading}
+                  style={styles.submitButton}
+                  textStyle={styles.signInButtonText}
                 >
-                  {activeTab === 'signin' && (
-                    <View style={styles.form}>
-                      <Input
-                        label={t('auth.email')}
-                        placeholder={t('auth.emailPlaceholder')}
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoComplete="email"
-                      />
-                      <Input
-                        label={t('auth.password')}
-                        placeholder={t('auth.password')}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        autoComplete="password"
-                      />
-                      <Pressable
-                        onPress={() => setShowPassword(!showPassword)}
-                        style={styles.showPasswordButton}
-                      >
-                        <TextComponent variant="caption" style={styles.showPasswordText}>
-                          {showPassword ? 'Hide' : 'Show'} Password
-                        </TextComponent>
-                      </Pressable>
-                      <Button
-                        onPress={handleSignIn}
-                        loading={loading}
-                        style={styles.submitButton}
-                      >
-                        {loading ? t('auth.signingIn') : t('auth.signIn')}
-                      </Button>
-                    </View>
-                  )}
+                  {loading ? t('auth.signingIn') : t('auth.signIn')}
+                </Button>
+              </View>
+            )}
 
-                  {activeTab === 'signup' && (
-                    <View style={styles.form}>
-                      <Input
-                        label={t('auth.email')}
-                        placeholder={t('auth.emailPlaceholder')}
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoComplete="email"
-                      />
-                      <Input
-                        label={t('auth.password')}
-                        placeholder={t('auth.password')}
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        autoComplete="password"
-                      />
-                      <Pressable
-                        onPress={() => setShowPassword(!showPassword)}
-                        style={styles.showPasswordButton}
-                      >
-                        <TextComponent variant="caption" style={styles.showPasswordText}>
-                          {showPassword ? 'Hide' : 'Show'} Password
-                        </TextComponent>
+            {activeTab === 'signup' && (
+              <View style={styles.form}>
+                <Input
+                  label={t('auth.email')}
+                  placeholder={t('auth.emailPlaceholder')}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+                <View style={styles.passwordContainer}>
+                  <TextComponent variant="body" style={styles.passwordLabel}>
+                    {t('auth.password')}
+                  </TextComponent>
+                  <Input
+                    placeholder={t('auth.password')}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoComplete="password"
+                    rightIcon={
+                      <Pressable onPress={() => setShowPassword(!showPassword)}>
+                        <Icon
+                          name={showPassword ? 'eye-off' : 'eye'}
+                          size={20}
+                          color={colors.mutedForeground}
+                        />
                       </Pressable>
-                      <Input
-                        label={t('auth.name')}
-                        placeholder={t('auth.namePlaceholder')}
-                        value={name}
-                        onChangeText={setName}
-                        autoCapitalize="words"
-                      />
-                      <Input
-                        label={t('auth.surname')}
-                        placeholder={t('auth.surnamePlaceholder')}
-                        value={surname}
-                        onChangeText={setSurname}
-                        autoCapitalize="words"
-                      />
-                      <Input
-                        label={t('auth.phone')}
-                        placeholder={t('auth.phonePlaceholder')}
-                        value={phone}
-                        onChangeText={setPhone}
-                        keyboardType="phone-pad"
-                      />
-                      <Input
-                        label={t('auth.city')}
-                        placeholder={t('auth.searchCity')}
-                        value={citySearch}
-                        onChangeText={setCitySearch}
-                      />
-                      {cityOptions.length > 0 && (
-                        <Select
-                          placeholder={t('auth.selectCity')}
-                          value={selectedCity}
-                          onValueChange={setSelectedCity}
-                          options={cityOptions}
-                        />
-                      )}
-                      <View style={styles.checkboxes}>
-                        <Checkbox
-                          value={acceptTerms}
-                          onValueChange={setAcceptTerms}
-                          label={
-                            <TextComponent variant="body">
-                              {t('auth.iAccept')}{' '}
-                              <TextComponent
-                                variant="body"
-                                style={styles.link}
-                                onPress={() => navigation.navigate('TermsAndConditions')}
-                              >
-                                {t('auth.termsAndConditions')}
-                              </TextComponent>
-                            </TextComponent>
-                          }
-                        />
-                        <Checkbox
-                          value={acceptPrivacy}
-                          onValueChange={setAcceptPrivacy}
-                          label={
-                            <TextComponent variant="body">
-                              {t('auth.iAccept')}{' '}
-                              <TextComponent
-                                variant="body"
-                                style={styles.link}
-                                onPress={() => navigation.navigate('PrivacyPolicy')}
-                              >
-                                {t('auth.privacyPolicy')}
-                              </TextComponent>
-                            </TextComponent>
-                          }
-                        />
-                      </View>
-                      <Button
-                        onPress={handleSignUp}
-                        loading={loading}
-                        style={styles.submitButton}
-                      >
-                        {loading ? t('auth.creatingAccount') : t('auth.signUp')}
-                      </Button>
-                    </View>
-                  )}
+                    }
+                    containerStyle={styles.passwordInputContainer}
+                  />
+                </View>
+                <Input
+                  label={t('auth.name')}
+                  placeholder={t('auth.namePlaceholder')}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+                <Input
+                  label={t('auth.surname')}
+                  placeholder={t('auth.surnamePlaceholder')}
+                  value={surname}
+                  onChangeText={setSurname}
+                  autoCapitalize="words"
+                />
+                <Input
+                  label={t('auth.phone')}
+                  placeholder={t('auth.phonePlaceholder')}
+                  value={phone}
+                  onChangeText={setPhone}
+                  keyboardType="phone-pad"
+                />
+                <CitySearchInput
+                  label={t('auth.city')}
+                  placeholder={t('auth.searchCity')}
+                  value={selectedCity}
+                  onValueChange={(value, label) => {
+                    setSelectedCity(value);
+                    setSelectedCityLabel(label || '');
+                  }}
+                  onSearch={searchCities}
+                  selectedCityLabel={selectedCityLabel}
+                />
+                <View style={styles.checkboxes}>
+                  <Checkbox
+                    value={acceptTerms}
+                    onValueChange={setAcceptTerms}
+                    label={
+                      <TextComponent variant="body">
+                        {t('auth.iAccept')}{' '}
+                        <TextComponent
+                          variant="body"
+                          style={styles.link}
+                          onPress={() => navigation.navigate('TermsAndConditions')}
+                        >
+                          {t('auth.termsAndConditions')}
+                        </TextComponent>
+                      </TextComponent>
+                    }
+                  />
+                  <Checkbox
+                    value={acceptPrivacy}
+                    onValueChange={setAcceptPrivacy}
+                    label={
+                      <TextComponent variant="body">
+                        {t('auth.iAccept')}{' '}
+                        <TextComponent
+                          variant="body"
+                          style={styles.link}
+                          onPress={() => navigation.navigate('PrivacyPolicy')}
+                        >
+                          {t('auth.privacyPolicy')}
+                        </TextComponent>
+                      </TextComponent>
+                    }
+                  />
+                </View>
+                <Button
+                  onPress={handleSignUp}
+                  loading={loading}
+                  style={styles.submitButton}
+                >
+                  {loading ? t('auth.creatingAccount') : t('auth.signUp')}
+                </Button>
+              </View>
+            )}
 
-                  {activeTab === 'reset' && (
-                    <View style={styles.form}>
-                      <Input
-                        label={t('auth.email')}
-                        placeholder={t('auth.emailPlaceholder')}
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoComplete="email"
-                      />
-                      <Button
-                        onPress={handleResetPassword}
-                        loading={loading}
-                        style={styles.submitButton}
-                      >
-                        {loading ? t('auth.sending') : t('auth.sendResetLink')}
-                      </Button>
-                    </View>
-                  )}
-                </Tabs>
-              </CardContent>
-            </Card>
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <TextComponent variant="caption" style={styles.dividerText}>
+                OR CONTINUE WITH
+              </TextComponent>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Apple Sign In Button */}
+            <Button
+              onPress={handleAppleSignIn}
+              variant="ghost"
+              style={styles.appleButton}
+            >
+              <Icon name="apple" size={20} color={colors.foreground} style={styles.appleIcon} />
+              <TextComponent variant="body" style={styles.appleButtonText}>
+                Sign in with Apple
+              </TextComponent>
+            </Button>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -484,67 +510,118 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
     padding: spacing.lg,
   },
   content: {
     width: '100%',
     maxWidth: 500,
     alignSelf: 'center',
-  },
-  card: {
-    ...goldGlow,
+    paddingTop: spacing.xl,
   },
   iconContainer: {
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary + '20',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: colors.primary,
+    borderColor: colors.foreground,
     justifyContent: 'center',
     alignItems: 'center',
-    ...goldGlow,
-  },
-  iconText: {
-    fontSize: 32,
   },
   title: {
     textAlign: 'center',
-    color: colors.gold,
+    color: colors.foreground,
     marginBottom: spacing.xs,
+    fontSize: 32,
+    fontWeight: '700',
   },
   subtitle: {
     textAlign: 'center',
-    color: colors.mutedForeground,
+    color: colors.foreground,
+    marginBottom: spacing.xl,
+    opacity: 0.8,
+  },
+  segmentedControlContainer: {
+    marginBottom: spacing.xl,
   },
   form: {
     gap: spacing.md,
+    marginBottom: spacing.xl,
   },
-  showPasswordButton: {
-    alignSelf: 'flex-end',
-    marginTop: -spacing.sm,
-    marginBottom: spacing.sm,
+  passwordContainer: {
+    marginBottom: spacing.md,
   },
-  showPasswordText: {
-    color: colors.gold,
+  passwordLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
   },
-  searchInput: {
-    marginTop: -spacing.md,
+  passwordLabel: {
+    color: colors.foreground,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  forgotPasswordLink: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  passwordInputContainer: {
+    marginBottom: 0,
   },
   checkboxes: {
     gap: spacing.sm,
     marginVertical: spacing.sm,
   },
   link: {
-    color: colors.gold,
+    color: colors.primary,
     textDecorationLine: 'underline',
   },
   submitButton: {
     marginTop: spacing.md,
+  },
+  signInButtonText: {
+    color: '#000000',
+    fontWeight: '700',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 20,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    color: colors.foreground,
+    marginHorizontal: spacing.md,
+    fontSize: 12,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+  },
+  appleButton: {
+    backgroundColor: '#000000',
+    marginBottom: spacing.xl,
+  },
+  appleIcon: {
+    marginRight: 0,
+  },
+  appleButtonText: {
+    color: colors.foreground,
+    fontWeight: '600',
+    marginLeft: spacing.sm,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 20,
   },
 });

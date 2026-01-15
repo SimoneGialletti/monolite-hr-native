@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Pressable, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -35,8 +35,33 @@ export default function LeaveRequest() {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<ScrollView>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingTypes, setIsLoadingTypes] = useState(false);
+  const inputRefs = useRef<{ [key: string]: any }>({});
+  const fieldPositions = useRef<{ [key: string]: number }>({});
+
+  const scrollToField = (fieldKey: string) => {
+    const yPosition = fieldPositions.current[fieldKey];
+    const scrollRef = scrollViewRef.current;
+    
+    if (yPosition !== undefined && scrollRef) {
+      // Add some offset to ensure field is visible above keyboard
+      const offset = 120;
+      scrollRef.scrollTo({ y: Math.max(0, yPosition - offset), animated: true });
+    } else {
+      // Fallback to scrollToEnd if position not available
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 300);
+    }
+  };
+
+  const handleFieldLayout = (fieldKey: string, event: any) => {
+    const { y } = event.nativeEvent.layout;
+    fieldPositions.current[fieldKey] = y;
+  };
   const [leaveRequestTypes, setLeaveRequestTypes] = useState<LeaveRequestType[]>([]);
   const [companyId, setCompanyId] = useState<string | null>(null);
 
@@ -229,10 +254,19 @@ export default function LeaveRequest() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          onScrollToIndexFailed={() => {}}
+        >
         <Card style={styles.card}>
           <CardContent style={styles.form}>
             <Select
@@ -283,20 +317,38 @@ export default function LeaveRequest() {
               </View>
             )}
 
-            <Input
-              label={t('leaveRequest.reason')}
-              placeholder={t('leaveRequest.reasonPlaceholder')}
-              value={formData.reason}
-              onChangeText={(value) => setFormData({ ...formData, reason: value })}
-            />
+            <View
+              onLayout={(e) => handleFieldLayout('reason', e)}
+            >
+              <Input
+                label={t('leaveRequest.reason')}
+                placeholder={t('leaveRequest.reasonPlaceholder')}
+                value={formData.reason}
+                onChangeText={(value) => setFormData({ ...formData, reason: value })}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollToField('reason');
+                  }, 300);
+                }}
+              />
+            </View>
 
-            <Textarea
-              label={`${t('leaveRequest.detailedDescription')} (${t('common.optional')})`}
-              placeholder={t('leaveRequest.detailsPlaceholder')}
-              value={formData.detailedDescription}
-              onChangeText={(value) => setFormData({ ...formData, detailedDescription: value })}
-              rows={4}
-            />
+            <View
+              onLayout={(e) => handleFieldLayout('detailedDescription', e)}
+            >
+              <Textarea
+                label={`${t('leaveRequest.detailedDescription')} (${t('common.optional')})`}
+                placeholder={t('leaveRequest.detailsPlaceholder')}
+                value={formData.detailedDescription}
+                onChangeText={(value) => setFormData({ ...formData, detailedDescription: value })}
+                rows={4}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollToField('detailedDescription');
+                  }, 300);
+                }}
+              />
+            </View>
 
             <Button
               onPress={handleSubmit}
@@ -309,6 +361,7 @@ export default function LeaveRequest() {
           </CardContent>
         </Card>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -317,6 +370,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  keyboardView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -338,13 +394,19 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
+    paddingBottom: spacing['4xl'],
+    flexGrow: 1,
   },
   card: {
     marginBottom: spacing.lg,
   },
   form: {
     padding: spacing.lg,
-    gap: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.lg,
+    gap: spacing.md,
   },
   loadingText: {
     color: colors.mutedForeground,

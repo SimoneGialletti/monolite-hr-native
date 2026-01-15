@@ -252,6 +252,7 @@
     "email": "Email",
     "emailPlaceholder": "tuo@esempio.it",
     "password": "Password",
+    "forgotPassword": "Password dimenticata?",
     "name": "Nome",
     "namePlaceholder": "Mario",
     "surname": "Cognome",

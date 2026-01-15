@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { TextInput, View, Text, StyleSheet, ViewStyle, TextStyle, TextInputProps } from 'react-native';
+import { TextInput, View, Text, StyleSheet, ViewStyle, TextStyle, TextInputProps, Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors, borderRadius, spacing, typography, goldGlow } from '@/theme';
+import { colors, borderRadius, spacing, typography, goldGlow, transitionDuration } from '@/theme';
 
 const AnimatedView = Animated.createAnimatedComponent(View);
 
@@ -10,10 +10,12 @@ export interface InputProps extends TextInputProps {
   error?: string;
   containerStyle?: ViewStyle;
   inputStyle?: TextStyle;
+  rightIcon?: React.ReactNode;
+  onRightIconPress?: () => void;
 }
 
 export const Input = React.forwardRef<TextInput, InputProps>(
-  ({ label, error, containerStyle, inputStyle, onFocus, onBlur, ...props }, ref) => {
+  ({ label, error, containerStyle, inputStyle, rightIcon, onRightIconPress, onFocus, onBlur, ...props }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
     const borderColor = useSharedValue(colors.border);
     const shadowOpacity = useSharedValue(0);
@@ -52,12 +54,17 @@ export const Input = React.forwardRef<TextInput, InputProps>(
         >
           <TextInput
             ref={ref}
-            style={[styles.input, inputStyle]}
+            style={[styles.input, inputStyle, rightIcon && styles.inputWithIcon]}
             placeholderTextColor={colors.mutedForeground}
             onFocus={handleFocus}
             onBlur={handleBlur}
             {...props}
           />
+          {rightIcon && (
+            <Pressable onPress={onRightIconPress} style={styles.rightIconContainer}>
+              {rightIcon}
+            </Pressable>
+          )}
         </AnimatedView>
         {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
@@ -85,12 +92,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 48,
     justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   input: {
     fontSize: typography.fontSize.base,
     color: colors.foreground,
     fontFamily: typography.fontFamily.regular,
     paddingVertical: spacing.sm,
+    flex: 1,
+  },
+  inputWithIcon: {
+    paddingRight: spacing.xs,
+  },
+  rightIconContainer: {
+    paddingLeft: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     fontSize: typography.fontSize.xs,

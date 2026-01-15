@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, Pressable, Modal } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { colors, spacing, borderRadius, goldGlow } from '@/theme';
 import { TextComponent } from './text';
 import { Button } from './button';
+
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export interface AlertDialogProps {
   open?: boolean;
@@ -52,10 +56,37 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
   children,
 }) => {
   const [isOpen, setIsOpen] = React.useState(open);
+  const backdropOpacity = useSharedValue(0);
+  const scale = useSharedValue(0.9);
+  const opacity = useSharedValue(0);
 
   React.useEffect(() => {
     setIsOpen(open);
   }, [open]);
+
+  useEffect(() => {
+    if (isOpen) {
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+      scale.value = withSpring(1, {
+        damping: 20,
+        stiffness: 90,
+      });
+      opacity.value = withTiming(1, { duration: 300 });
+    } else {
+      backdropOpacity.value = withTiming(0, { duration: 200 });
+      scale.value = withTiming(0.9, { duration: 200 });
+      opacity.value = withTiming(0, { duration: 200 });
+    }
+  }, [isOpen]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const contentStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
 
   const handleClose = () => {
     setIsOpen(false);
@@ -81,17 +112,17 @@ export const AlertDialog: React.FC<AlertDialogProps> = ({
       <Modal
         visible={isOpen}
         transparent
-        animationType="fade"
+        animationType="none"
         onRequestClose={handleClose}
       >
         <View style={styles.overlay}>
-          <Pressable style={styles.backdrop} onPress={handleClose} />
-          <View style={styles.content}>
+          <AnimatedPressable style={[styles.backdrop, backdropStyle]} onPress={handleClose} />
+          <AnimatedView style={[styles.content, contentStyle]}>
             {contentChild &&
               React.cloneElement(contentChild as React.ReactElement, {
                 onClose: handleClose,
               })}
-          </View>
+          </AnimatedView>
         </View>
       </Modal>
     </>
@@ -211,7 +242,7 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   content: {
     width: '90%',

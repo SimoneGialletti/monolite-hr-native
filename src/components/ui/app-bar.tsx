@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ViewStyle, Pressable, Modal } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { BlurView } from '@react-native-community/blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +10,9 @@ import { colors, spacing } from '@/theme';
 import { TextComponent } from './text';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { supabase } from '@/integrations/supabase/client';
+
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export interface AppBarProps {
   style?: ViewStyle;
@@ -29,6 +33,29 @@ export const AppBar: React.FC<AppBarProps> = ({
   const navigation = useNavigation<any>();
   const { t } = useTranslation();
   const [menuVisible, setMenuVisible] = useState(false);
+  const backdropOpacity = useSharedValue(0);
+  const modalTranslateY = useSharedValue(300);
+
+  useEffect(() => {
+    if (menuVisible) {
+      backdropOpacity.value = withTiming(1, { duration: 300 });
+      modalTranslateY.value = withSpring(0, {
+        damping: 20,
+        stiffness: 90,
+      });
+    } else {
+      backdropOpacity.value = withTiming(0, { duration: 200 });
+      modalTranslateY.value = withTiming(300, { duration: 200 });
+    }
+  }, [menuVisible]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const modalStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: modalTranslateY.value }],
+  }));
 
   const handleLogout = async () => {
     setMenuVisible(false);
@@ -87,11 +114,18 @@ export const AppBar: React.FC<AppBarProps> = ({
       <Modal
         visible={menuVisible}
         transparent
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setMenuVisible(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setMenuVisible(false)}>
-          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+        <View style={styles.modalOverlay}>
+          <AnimatedPressable
+            style={[styles.modalBackdrop, backdropStyle]}
+            onPress={() => setMenuVisible(false)}
+          />
+          <AnimatedPressable
+            style={[styles.modalContent, modalStyle]}
+            onPress={(e) => e.stopPropagation()}
+          >
             <View style={styles.modalHeader}>
               <TextComponent variant="h3" style={styles.modalTitle}>
                 {t('common.menu')}
@@ -118,8 +152,8 @@ export const AppBar: React.FC<AppBarProps> = ({
                 </Pressable>
               </View>
             </View>
-          </Pressable>
-        </Pressable>
+          </AnimatedPressable>
+        </View>
       </Modal>
     </>
   );
@@ -164,8 +198,11 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   modalContent: {
     backgroundColor: colors.card,
