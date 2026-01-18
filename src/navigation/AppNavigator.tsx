@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useEffect, useRef } from 'react';
+import { NavigationContainer, LinkingOptions, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,6 +8,59 @@ import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors } from '@/theme';
 import { RootStackParamList, MainTabParamList } from './types';
+import { PushNotificationProvider } from '@/components/providers/PushNotificationProvider';
+import { initializeAuthDeepLinking } from '@/integrations/supabase/client';
+
+// Deep linking configuration
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['monolite-hr://'],
+  config: {
+    screens: {
+      Main: {
+        screens: {
+          Home: {
+            screens: {
+              HomeTab: 'home',
+              ActivitiesTab: 'activities',
+              MessagesTab: 'messages',
+              ProfileTab: 'profile',
+            },
+          },
+          LogHours: 'log-hours',
+          MaterialRequest: 'material-request',
+          LeaveRequest: 'leave-request',
+        },
+      },
+      Auth: 'auth',
+      AuthCallback: {
+        path: 'auth/callback',
+        // Parse query parameters from the URL
+        parse: {
+          token_hash: (token_hash: string) => token_hash,
+          type: (type: string) => type,
+          redirect_to: (redirect_to: string) => redirect_to,
+          access_token: (access_token: string) => access_token,
+          refresh_token: (refresh_token: string) => refresh_token,
+          error: (error: string) => error,
+          error_description: (error_description: string) => error_description,
+        },
+      },
+      ConfirmEmail: 'confirm-email',
+      EmailConfirmed: 'email-confirmed',
+      ResetPassword: 'reset-password',
+      UpdatePassword: 'update-password',
+      AcceptInvitation: {
+        path: 'accept-invitation/:token?',
+        parse: {
+          token: (token: string) => token,
+        },
+      },
+      PrivacyPolicy: 'privacy-policy',
+      TermsAndConditions: 'terms-and-conditions',
+      NotFound: '*',
+    },
+  },
+};
 
 // Import screens (we'll create these next)
 import AuthScreen from '@/pages/Auth';
@@ -25,6 +78,7 @@ import ResetPasswordScreen from '@/pages/ResetPassword';
 import UpdatePasswordScreen from '@/pages/UpdatePassword';
 import AcceptInvitationScreen from '@/pages/AcceptInvitation';
 import AppleCallbackScreen from '@/pages/AppleCallback';
+import AuthCallbackScreen from '@/pages/AuthCallback';
 import PrivacyPolicyScreen from '@/pages/PrivacyPolicy';
 import TermsAndConditionsScreen from '@/pages/TermsAndConditions';
 import NotFoundScreen from '@/pages/NotFound';
@@ -124,6 +178,18 @@ function MainStack() {
 // Root Navigator
 export default function AppNavigator() {
   const { user, loading } = useAuth();
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+
+  // Initialize auth deep linking for non-callback URLs
+  // Note: auth/callback URLs are handled by AuthCallback screen via React Navigation
+  useEffect(() => {
+    const cleanup = initializeAuthDeepLinking((type) => {
+      console.log('AppNavigator - Auth session detected from non-callback URL, type:', type);
+      // This is for future use if we add other auth deep links
+    });
+
+    return cleanup;
+  }, []);
 
   if (loading) {
     return (
@@ -134,40 +200,44 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
-        }}
-      >
-        {user ? (
-          <>
-            <Stack.Screen name="Main" component={MainStack} />
-            <Stack.Screen name="ConfirmEmail" component={ConfirmEmailScreen} />
-            <Stack.Screen name="EmailConfirmed" component={EmailConfirmedScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-            <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
-            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-            <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
-            <Stack.Screen name="AppleCallback" component={AppleCallbackScreen} />
-            <Stack.Screen name="AcceptInvitation" component={AcceptInvitationScreen} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Auth" component={AuthScreen} />
-            <Stack.Screen name="ConfirmEmail" component={ConfirmEmailScreen} />
-            <Stack.Screen name="EmailConfirmed" component={EmailConfirmedScreen} />
-            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-            <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
-            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
-            <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
-            <Stack.Screen name="AppleCallback" component={AppleCallbackScreen} />
-            <Stack.Screen name="AcceptInvitation" component={AcceptInvitationScreen} />
-          </>
-        )}
-        <Stack.Screen name="NotFound" component={NotFoundScreen} />
-      </Stack.Navigator>
+    <NavigationContainer ref={navigationRef} linking={linking}>
+      <PushNotificationProvider>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        >
+          {user ? (
+            <>
+              <Stack.Screen name="Main" component={MainStack} />
+              <Stack.Screen name="ConfirmEmail" component={ConfirmEmailScreen} />
+              <Stack.Screen name="EmailConfirmed" component={EmailConfirmedScreen} />
+              <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+              <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
+              <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+              <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
+              <Stack.Screen name="AppleCallback" component={AppleCallbackScreen} />
+              <Stack.Screen name="AcceptInvitation" component={AcceptInvitationScreen} />
+              <Stack.Screen name="AuthCallback" component={AuthCallbackScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Auth" component={AuthScreen} />
+              <Stack.Screen name="AuthCallback" component={AuthCallbackScreen} />
+              <Stack.Screen name="ConfirmEmail" component={ConfirmEmailScreen} />
+              <Stack.Screen name="EmailConfirmed" component={EmailConfirmedScreen} />
+              <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+              <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
+              <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+              <Stack.Screen name="TermsAndConditions" component={TermsAndConditionsScreen} />
+              <Stack.Screen name="AppleCallback" component={AppleCallbackScreen} />
+              <Stack.Screen name="AcceptInvitation" component={AcceptInvitationScreen} />
+            </>
+          )}
+          <Stack.Screen name="NotFound" component={NotFoundScreen} />
+        </Stack.Navigator>
+      </PushNotificationProvider>
     </NavigationContainer>
   );
 }

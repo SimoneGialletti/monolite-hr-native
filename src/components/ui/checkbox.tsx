@@ -31,7 +31,8 @@ export const Checkbox: React.FC<CheckboxProps> = ({
           true: colors.gold,
           false: colors.border,
         }}
-        onCheckColor={colors.primaryForeground}
+        onCheckColor={colors.gold}
+        onFillColor={colors.background}
         onTintColor={colors.gold}
         style={styles.checkbox}
       />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ViewStyle, Pressable, Modal } from 'react-native';
+import { View, StyleSheet, ViewStyle, Pressable, Modal, Text } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { BlurView } from '@react-native-community/blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,8 @@ import { colors, spacing } from '@/theme';
 import { TextComponent } from './text';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { supabase } from '@/integrations/supabase/client';
+import { useNotifications } from '@/hooks/useNotifications';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 
 const AnimatedView = Animated.createAnimatedComponent(View);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -33,6 +35,8 @@ export const AppBar: React.FC<AppBarProps> = ({
   const navigation = useNavigation<any>();
   const { t } = useTranslation();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const { unreadCount } = useNotifications();
   const backdropOpacity = useSharedValue(0);
   const modalTranslateY = useSharedValue(300);
 
@@ -103,8 +107,18 @@ export const AppBar: React.FC<AppBarProps> = ({
 
           {/* Right: Notifications */}
           <View style={styles.rightSection}>
-            <Pressable style={styles.iconButton}>
+            <Pressable
+              style={styles.iconButton}
+              onPress={() => setNotificationsVisible(true)}
+            >
               <Icon name="bell-outline" size={24} color={colors.foreground} />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
             </Pressable>
           </View>
         </View>
@@ -126,6 +140,7 @@ export const AppBar: React.FC<AppBarProps> = ({
             style={[styles.modalContent, modalStyle]}
             onPress={(e) => e.stopPropagation()}
           >
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <TextComponent variant="h3" style={styles.modalTitle}>
                 {t('common.menu')}
@@ -143,9 +158,11 @@ export const AppBar: React.FC<AppBarProps> = ({
                 <LanguageSwitcher />
               </View>
 
+              <View style={styles.divider} />
+
               <View style={styles.menuSection}>
                 <Pressable style={styles.logoutButton} onPress={handleLogout}>
-                  <Icon name="logout" size={20} color={colors.destructive} />
+                  <Icon name="logout" size={22} color={colors.destructive} />
                   <TextComponent variant="body" style={styles.logoutText}>
                     {t('profile.logout')}
                   </TextComponent>
@@ -155,6 +172,12 @@ export const AppBar: React.FC<AppBarProps> = ({
           </AnimatedPressable>
         </View>
       </Modal>
+
+      {/* Notification Center Modal */}
+      <NotificationCenter
+        visible={notificationsVisible}
+        onClose={() => setNotificationsVisible(false)}
+      />
     </>
   );
 };
@@ -206,24 +229,48 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: colors.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     maxHeight: '50%',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 16,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.mutedForeground + '60',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: spacing.md,
+    marginTop: spacing.xs,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.xl,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     color: colors.foreground,
+    fontWeight: '700',
+    fontSize: 20,
   },
   closeButton: {
     padding: spacing.xs,
+    borderRadius: 20,
+    backgroundColor: colors.muted + '30',
   },
   modalBody: {
     gap: spacing.xl,
@@ -233,20 +280,49 @@ const styles = StyleSheet.create({
   },
   menuSectionTitle: {
     color: colors.mutedForeground,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     borderWidth: 2,
     borderColor: colors.destructive,
-    borderRadius: 12,
+    borderRadius: 16,
+    backgroundColor: colors.destructive + '10',
   },
   logoutText: {
     color: colors.destructive,
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: colors.destructive,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

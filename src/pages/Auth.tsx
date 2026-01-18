@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import appleAuth from '@invertase/react-native-apple-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -9,11 +10,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectOption } from '@/components/ui/select';
 import { CitySearchInput } from '@/components/ui/city-search-input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { TextComponent } from '@/components/ui/text';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { colors, spacing, borderRadius } from '@/theme';
+import { colors, spacing } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Auth() {
@@ -36,6 +47,9 @@ export default function Auth() {
   // Terms and Privacy Policy acceptance
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
+
+  // Email already exists dialog
+  const [showEmailExistsDialog, setShowEmailExistsDialog] = useState(false);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -144,6 +158,7 @@ export default function Auth() {
         email,
         password,
         options: {
+          emailRedirectTo: 'monolite-hr://auth/callback',
           data: {
             name,
             surname,
@@ -154,6 +169,13 @@ export default function Auth() {
       });
 
       if (error) throw error;
+
+      // Check if user already exists (identities array will be empty)
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        // Show dialog to inform user email already exists
+        setShowEmailExistsDialog(true);
+        return;
+      }
 
       // Redirect to confirm email page
       navigation.navigate('ConfirmEmail', { email });
@@ -257,20 +279,133 @@ export default function Auth() {
   };
 
   const handleAppleSignIn = async () => {
-    // TODO: Implement Apple Sign In
-    // This would typically use @invertase/react-native-apple-authentication
-    // or a similar library to trigger the Apple sign-in flow
-    Toast.show({
-      type: 'info',
-      text1: 'Apple Sign In',
-      text2: 'Apple Sign In will be implemented soon',
-    });
+    // Check if Apple Sign-In is available (iOS 13+)
+    if (Platform.OS !== 'ios') {
+      Toast.show({
+        type: 'error',
+        text1: t('auth.error'),
+        text2: t('auth.appleSignInNotSupported'),
+      });
+      return;
+    }
+
+    if (!appleAuth.isSupported) {
+      Toast.show({
+        type: 'error',
+        text1: t('auth.error'),
+        text2: t('auth.appleSignInNotSupported'),
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Perform Apple Sign-In request
+      // NOTE: For iOS, Apple generates the nonce internally and returns it in the response
+      // We should NOT generate our own nonce - we use the one Apple provides
+      const appleAuthRequestResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
+      });
+
+      const { identityToken, fullName, nonce } = appleAuthRequestResponse;
+
+      console.log('[Apple Sign-In] Got identity token:', identityToken ? 'yes' : 'no');
+      console.log('[Apple Sign-In] Got nonce from Apple:', nonce);
+
+      // Check if we received an identity token (this is the key validation)
+      if (!identityToken) {
+        throw new Error('No identity token received from Apple');
+      }
+
+      // Exchange Apple token for Supabase session
+      // Use the nonce that Apple returned in the response
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: identityToken,
+        nonce: nonce,
+      });
+
+      if (error) throw error;
+
+      // Update user metadata with name if provided (first sign-in only)
+      if (fullName?.givenName || fullName?.familyName) {
+        await supabase.auth.updateUser({
+          data: {
+            name: fullName.givenName || '',
+            surname: fullName.familyName || '',
+          },
+        });
+      }
+
+      Toast.show({
+        type: 'success',
+        text1: t('auth.welcomeBack'),
+        text2: t('auth.loginSuccess'),
+      });
+
+      // Check company association
+      if (data.user) {
+        const { data: userCompany } = await supabase
+          .from('user_companies')
+          .select('id, role_id')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (!userCompany) {
+          navigation.navigate('PendingInvitation');
+        } else {
+          navigation.navigate('Main');
+        }
+      }
+    } catch (error: any) {
+      // User cancelled - don't show error
+      if (error.code === appleAuth.Error.CANCELED || error.code === '1001') {
+        return;
+      }
+
+      Toast.show({
+        type: 'error',
+        text1: t('auth.error'),
+        text2: error.message || t('auth.appleSignInFailed'),
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const segmentedOptions = [
     { value: 'signin', label: t('auth.signIn') },
     { value: 'signup', label: t('auth.signUp') },
   ];
+
+  const handleEmailExistsSignIn = () => {
+    setShowEmailExistsDialog(false);
+    setActiveTab('signin');
+  };
+
+  const handleEmailExistsForgotPassword = async () => {
+    setShowEmailExistsDialog(false);
+    setActiveTab('signin');
+    // Trigger password reset
+    if (email) {
+      try {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: 'monolite-hr://reset-password',
+        });
+        if (!error) {
+          Toast.show({
+            type: 'success',
+            text1: t('auth.checkEmail'),
+            text2: t('auth.resetLinkSent'),
+          });
+        }
+      } catch (err) {
+        // Silently fail - user can use forgot password link
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -411,12 +546,11 @@ export default function Auth() {
                   onChangeText={setSurname}
                   autoCapitalize="words"
                 />
-                <Input
+                <PhoneInput
                   label={t('auth.phone')}
                   placeholder={t('auth.phonePlaceholder')}
                   value={phone}
                   onChangeText={setPhone}
-                  keyboardType="phone-pad"
                 />
                 <CitySearchInput
                   label={t('auth.city')}
@@ -473,29 +607,56 @@ export default function Auth() {
               </View>
             )}
 
-            {/* Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <TextComponent variant="caption" style={styles.dividerText}>
-                OR CONTINUE WITH
-              </TextComponent>
-              <View style={styles.dividerLine} />
-            </View>
+            {/* Divider and Apple Sign In Button - iOS only */}
+            {Platform.OS === 'ios' && (
+              <>
+                <View style={styles.dividerContainer}>
+                  <View style={styles.dividerLine} />
+                  <TextComponent variant="caption" style={styles.dividerText}>
+                    OR CONTINUE WITH
+                  </TextComponent>
+                  <View style={styles.dividerLine} />
+                </View>
 
-            {/* Apple Sign In Button */}
-            <Button
-              onPress={handleAppleSignIn}
-              variant="ghost"
-              style={styles.appleButton}
-            >
-              <Icon name="apple" size={20} color={colors.foreground} style={styles.appleIcon} />
-              <TextComponent variant="body" style={styles.appleButtonText}>
-                Sign in with Apple
-              </TextComponent>
-            </Button>
+                <Button
+                  onPress={handleAppleSignIn}
+                  variant="ghost"
+                  style={styles.appleButton}
+                  disabled={loading}
+                >
+                  <Icon name="apple" size={20} color={colors.foreground} style={styles.appleIcon} />
+                  <TextComponent variant="body" style={styles.appleButtonText}>
+                    {t('auth.signInWithApple')}
+                  </TextComponent>
+                </Button>
+              </>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Email Already Exists Dialog */}
+      <AlertDialog
+        open={showEmailExistsDialog}
+        onOpenChange={setShowEmailExistsDialog}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('auth.emailExistsTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('auth.emailExistsDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onPress={handleEmailExistsForgotPassword}>
+              {t('auth.forgotPassword')}
+            </AlertDialogCancel>
+            <AlertDialogAction onPress={handleEmailExistsSignIn}>
+              {t('auth.signIn')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SafeAreaView>
   );
 }

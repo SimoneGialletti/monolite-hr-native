@@ -192,12 +192,30 @@
       "night": "Notturno",
       "sunday": "Domenica",
       "mixed": "Misto"
+    },
+    "filter": {
+      "title": "Filtri",
+      "searchPlaceholder": "Cerca attività...",
+      "dateFrom": "Da Data",
+      "dateTo": "A Data",
+      "selectDate": "Seleziona data",
+      "status": "Stato",
+      "allStatuses": "Tutti gli Stati",
+      "apply": "Applica",
+      "reset": "Reimposta",
+      "noResults": "Nessun risultato trovato",
+      "noResultsDescription": "Prova a modificare la ricerca o i filtri"
     }
   },
   "settings": {
     "language": "Lingua",
     "english": "Inglese",
     "italian": "Italiano"
+  },
+  "phone": {
+    "selectCountry": "Seleziona Paese",
+    "searchCountry": "Cerca paese...",
+    "noCountryFound": "Nessun paese trovato"
   },
   "profile": {
     "title": "Il Mio Profilo",
@@ -294,7 +312,16 @@
     "passwordUpdated": "La tua password è stata aggiornata con successo",
     "failedUpdatePassword": "Impossibile aggiornare la password",
     "updatePasswordButton": "Aggiorna Password",
-    "updating": "Aggiornamento..."
+    "updating": "Aggiornamento...",
+    "emailAlreadyRegistered": "Questa email è già registrata. Effettua l'accesso.",
+    "confirmationEmailResent": "Questa email è già registrata. Abbiamo inviato nuovamente l'email di conferma.",
+    "emailExistsTitle": "Email già registrata",
+    "emailExistsDescription": "Questa email è già associata a un account. Vuoi accedere o reimpostare la password?",
+    "verifyingEmail": "Verifica dell'email in corso...",
+    "redirectingToLogin": "Reindirizzamento al login...",
+    "signInWithApple": "Accedi con Apple",
+    "appleSignInNotSupported": "Accedi con Apple non è disponibile su questo dispositivo",
+    "appleSignInFailed": "Accesso con Apple fallito. Riprova."
   },
   "confirmEmail": {
     "checkYourEmail": "Controlla la tua email",
@@ -324,6 +351,32 @@
     "thankYou": "Grazie!",
     "successMessage": "La tua email è stata verificata con successo.",
     "continue": "Continua al login"
+  },
+  "notifications": {
+    "title": "Notifiche",
+    "markAllRead": "Segna tutte lette",
+    "empty": {
+      "title": "Nessuna notifica",
+      "subtitle": "Sei in pari! Le nuove notifiche appariranno qui."
+    },
+    "settings": {
+      "title": "Impostazioni Notifiche",
+      "pushEnabled": "Notifiche Push",
+      "pushEnabledDesc": "Ricevi notifiche push sul tuo dispositivo",
+      "notifyApprovals": "Aggiornamenti Approvazioni",
+      "notifyApprovalsDesc": "Ricevi notifiche quando le tue richieste vengono approvate o rifiutate",
+      "notifyAnnouncements": "Annunci",
+      "notifyAnnouncementsDesc": "Ricevi annunci e messaggi aziendali",
+      "notifyDocuments": "Avvisi Documenti",
+      "notifyDocumentsDesc": "Ricevi notifiche quando i documenti stanno per scadere",
+      "batchNotifications": "Riepilogo Giornaliero",
+      "batchNotificationsDesc": "Ricevi un riepilogo giornaliero invece di notifiche singole",
+      "batchTime": "Orario Riepilogo",
+      "batchTimeDesc": "Scegli quando ricevere il tuo riepilogo giornaliero",
+      "openSettings": "Apri Impostazioni Dispositivo",
+      "permissionRequired": "Il permesso per le notifiche è necessario per ricevere notifiche push",
+      "saved": "Impostazioni notifiche salvate"
+    }
   },
   "acceptInvitation": {
     "title": "Sei stato invitato!",

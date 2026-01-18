@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { TextInput, View, Text, StyleSheet, ViewStyle, TextStyle, TextInputProps, Pressable } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { colors, borderRadius, spacing, typography, goldGlow, transitionDuration } from '@/theme';
-
-const AnimatedView = Animated.createAnimatedComponent(View);
+import { colors, borderRadius, spacing, typography } from '@/theme';
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -17,39 +14,25 @@ export interface InputProps extends TextInputProps {
 export const Input = React.forwardRef<TextInput, InputProps>(
   ({ label, error, containerStyle, inputStyle, rightIcon, onRightIconPress, onFocus, onBlur, ...props }, ref) => {
     const [isFocused, setIsFocused] = useState(false);
-    const borderColor = useSharedValue(colors.border);
-    const shadowOpacity = useSharedValue(0);
-
-    const animatedBorderStyle = useAnimatedStyle(() => {
-      return {
-        borderColor: borderColor.value,
-        shadowOpacity: shadowOpacity.value,
-      };
-    });
 
     const handleFocus = (e: any) => {
       setIsFocused(true);
-      borderColor.value = withTiming(colors.gold, { duration: transitionDuration.normal });
-      shadowOpacity.value = withTiming(0.4, { duration: transitionDuration.normal });
       onFocus?.(e);
     };
 
     const handleBlur = (e: any) => {
       setIsFocused(false);
-      borderColor.value = withTiming(colors.border, { duration: transitionDuration.normal });
-      shadowOpacity.value = withTiming(0, { duration: transitionDuration.normal });
       onBlur?.(e);
     };
 
     return (
       <View style={[styles.container, containerStyle]}>
         {label && <Text style={styles.label}>{label}</Text>}
-        <AnimatedView
+        <View
           style={[
             styles.inputContainer,
-            animatedBorderStyle,
-            isFocused && { ...goldGlow },
-            error && { borderColor: colors.destructive },
+            isFocused && styles.inputContainerFocused,
+            error && styles.inputContainerError,
           ]}
         >
           <TextInput
@@ -65,7 +48,7 @@ export const Input = React.forwardRef<TextInput, InputProps>(
               {rightIcon}
             </Pressable>
           )}
-        </AnimatedView>
+        </View>
         {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
     );
@@ -87,6 +70,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: borderRadius.lg,
     backgroundColor: colors.input,
     paddingHorizontal: spacing.md,
@@ -94,6 +78,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  inputContainerFocused: {
+    borderColor: colors.gold,
+  },
+  inputContainerError: {
+    borderColor: colors.destructive,
   },
   input: {
     fontSize: typography.fontSize.base,

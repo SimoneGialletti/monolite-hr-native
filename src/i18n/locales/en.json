@@ -192,12 +192,30 @@
       "night": "Night",
       "sunday": "Sunday",
       "mixed": "Mixed"
+    },
+    "filter": {
+      "title": "Filters",
+      "searchPlaceholder": "Search activities...",
+      "dateFrom": "From Date",
+      "dateTo": "To Date",
+      "selectDate": "Select date",
+      "status": "Status",
+      "allStatuses": "All Statuses",
+      "apply": "Apply",
+      "reset": "Reset",
+      "noResults": "No results found",
+      "noResultsDescription": "Try adjusting your search or filters"
     }
   },
   "settings": {
     "language": "Language",
     "english": "English",
     "italian": "Italian"
+  },
+  "phone": {
+    "selectCountry": "Select Country",
+    "searchCountry": "Search country...",
+    "noCountryFound": "No country found"
   },
   "profile": {
     "title": "My Profile",
@@ -294,7 +312,16 @@
     "passwordUpdated": "Your password has been updated successfully",
     "failedUpdatePassword": "Failed to update password",
     "updatePasswordButton": "Update Password",
-    "updating": "Updating..."
+    "updating": "Updating...",
+    "emailAlreadyRegistered": "This email is already registered. Please sign in instead.",
+    "confirmationEmailResent": "This email is already registered. We've resent the confirmation email.",
+    "emailExistsTitle": "Email Already Registered",
+    "emailExistsDescription": "This email is already associated with an account. Would you like to sign in or reset your password?",
+    "verifyingEmail": "Verifying your email...",
+    "redirectingToLogin": "Redirecting to login...",
+    "signInWithApple": "Sign in with Apple",
+    "appleSignInNotSupported": "Apple Sign-In is not available on this device",
+    "appleSignInFailed": "Apple Sign-In failed. Please try again."
   },
   "confirmEmail": {
     "checkYourEmail": "Check your email",
@@ -324,6 +351,32 @@
     "thankYou": "Thank you!",
     "successMessage": "Your email has been successfully verified.",
     "continue": "Continue to login"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": {
+      "title": "No notifications",
+      "subtitle": "You're all caught up! New notifications will appear here."
+    },
+    "settings": {
+      "title": "Notification Settings",
+      "pushEnabled": "Push Notifications",
+      "pushEnabledDesc": "Receive push notifications on your device",
+      "notifyApprovals": "Approval Updates",
+      "notifyApprovalsDesc": "Get notified when your requests are approved or rejected",
+      "notifyAnnouncements": "Announcements",
+      "notifyAnnouncementsDesc": "Receive company announcements and messages",
+      "notifyDocuments": "Document Alerts",
+      "notifyDocumentsDesc": "Get notified when documents are expiring",
+      "batchNotifications": "Daily Summary",
+      "batchNotificationsDesc": "Receive a daily summary instead of individual notifications",
+      "batchTime": "Summary Time",
+      "batchTimeDesc": "Choose when to receive your daily summary",
+      "openSettings": "Open Device Settings",
+      "permissionRequired": "Notification permission is required to receive push notifications",
+      "saved": "Notification settings saved"
+    }
   },
   "acceptInvitation": {
     "title": "You're Invited!",

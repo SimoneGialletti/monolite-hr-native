@@ -187,8 +187,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: spacing.lg,
-    paddingTop: spacing['3xl'] + spacing.lg, // Space for blurred app bar
+    paddingHorizontal: spacing.md,
+    paddingTop: 100, // Space for blurred app bar
     paddingBottom: spacing['3xl'], // Space for tab bar
   },
   header: {

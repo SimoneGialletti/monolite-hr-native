@@ -22,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Loading } from '@/components/ui/loading';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { supabase } from '@/integrations/supabase/client';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '@/theme';
@@ -376,6 +377,7 @@ export default function Settings() {
     { value: 'contract', label: t('profile.contract') },
     { value: 'payroll', label: t('profile.payroll') },
     { value: 'certificates', label: t('profile.certificates') },
+    { value: 'notifications', label: t('notifications.title') },
   ];
 
   return (
@@ -696,10 +698,16 @@ export default function Settings() {
               )}
             </View>
           )}
+
+          {activeTab === 'notifications' && (
+            <View style={styles.tabContent}>
+              <NotificationSettings />
+            </View>
+          )}
         </Tabs>
 
         {/* Account Security Section */}
-        <Card style={styles.card}>
+        <Card style={styles.accountSecurityCard}>
           <CardContent style={styles.cardContent}>
             <TextComponent variant="h3" style={styles.sectionTitle}>
               {t('profile.accountSecurity') || 'Account Security'}
@@ -779,8 +787,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingTop: 100, // Space for blurred app bar
+    paddingBottom: spacing['3xl'], // Space for tab bar
   },
   header: {
     marginBottom: spacing.lg,
@@ -794,6 +803,10 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: spacing.lg,
+  },
+  accountSecurityCard: {
+    marginBottom: spacing.lg,
+    marginTop: spacing.xl,
   },
   userCardContent: {
     paddingTop: spacing.lg,

@@ -64,7 +64,16 @@ export default function EmailConfirmed() {
 
       if (!userCompany) {
         setTimeout(() => {
-          navigation.navigate('PendingInvitation');
+          // PendingInvitation is inside MainStack, so navigate through Main
+          navigation.reset({
+            index: 0,
+            routes: [{
+              name: 'Main',
+              state: {
+                routes: [{ name: 'PendingInvitation' }],
+              },
+            }],
+          });
         }, 2000);
       }
     } catch (error) {
@@ -110,7 +119,14 @@ export default function EmailConfirmed() {
         {/* Continue Button */}
         <Animated.View style={[styles.buttonContainer, contentAnimatedStyle]}>
           <Button
-            onPress={() => navigation.navigate('Auth')}
+            onPress={() => {
+              // User is already authenticated after email verification
+              // Navigate to Main which will check for company association
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Main' }],
+              });
+            }}
             style={styles.continueButton}
           >
             <TextComponent variant="body" style={styles.buttonText}>

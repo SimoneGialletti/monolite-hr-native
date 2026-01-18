@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, Pressable, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -10,11 +10,15 @@ import { TextComponent } from '@/components/ui/text';
 import { Card, CardContent } from '@/components/ui/card';
 import { AppBar } from '@/components/ui/app-bar';
 import { Loading } from '@/components/ui/loading';
+import { SearchBar } from '@/components/ui/search-bar';
+import { FilterBadge } from '@/components/ui/filter-badge';
+import { ActivityFilterModal, ActivityFilters, defaultFilters } from '@/components/activities/ActivityFilterModal';
+import { useDebounce } from '@/hooks/useDebounce';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '@/theme';
-import { format } from 'date-fns';
+import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 
 interface LeaveRequest {
   id: string;
@@ -59,16 +63,158 @@ export default function MyActivities() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('hours');
-  
+
   // Check if we can go back (only show back button if navigated from stack, not from bottom tab)
   const routeName = navigation.getState()?.routes?.[navigation.getState()?.index || 0]?.name;
   const canGoBack = navigation.canGoBack() && routeName !== 'ActivitiesTab';
+
+  // Data state
   const [hourLogs, setHourLogs] = useState<WorkHoursLog[]>([]);
   const [materialRequests, setMaterialRequests] = useState<MaterialRequest[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isLoadingHours, setIsLoadingHours] = useState(false);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
   const [isLoadingLeave, setIsLoadingLeave] = useState(false);
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<ActivityFilters>(defaultFilters);
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+
+  // Debounce search query
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Calculate active filter count (excluding search)
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.dateFrom) count++;
+    if (filters.dateTo) count++;
+    if (filters.status !== 'all') count++;
+    return count;
+  }, [filters]);
+
+  // Handle tab change - clear search
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    setSearchQuery('');
+    // Optionally reset filters too
+    // setFilters(defaultFilters);
+  };
+
+  // Filter hours data
+  const filteredHours = useMemo(() => {
+    let result = hourLogs;
+
+    // Text search
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.construction_site_name?.toLowerCase().includes(query) ||
+          item.work_description?.toLowerCase().includes(query) ||
+          item.work_type?.toLowerCase().includes(query)
+      );
+    }
+
+    // Date range filter (uses work_date)
+    if (filters.dateFrom) {
+      const fromDate = startOfDay(filters.dateFrom);
+      result = result.filter((item) => {
+        const itemDate = new Date(item.work_date);
+        return !isBefore(itemDate, fromDate);
+      });
+    }
+    if (filters.dateTo) {
+      const toDate = endOfDay(filters.dateTo);
+      result = result.filter((item) => {
+        const itemDate = new Date(item.work_date);
+        return !isAfter(itemDate, toDate);
+      });
+    }
+
+    // No status filter for hours
+
+    return result;
+  }, [hourLogs, debouncedSearch, filters.dateFrom, filters.dateTo]);
+
+  // Filter materials data
+  const filteredMaterials = useMemo(() => {
+    let result = materialRequests;
+
+    // Text search
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.title?.toLowerCase().includes(query) ||
+          item.item_name?.toLowerCase().includes(query) ||
+          item.project_name?.toLowerCase().includes(query) ||
+          item.site_name?.toLowerCase().includes(query)
+      );
+    }
+
+    // Date range filter (uses submitted_at)
+    if (filters.dateFrom) {
+      const fromDate = startOfDay(filters.dateFrom);
+      result = result.filter((item) => {
+        const itemDate = new Date(item.submitted_at);
+        return !isBefore(itemDate, fromDate);
+      });
+    }
+    if (filters.dateTo) {
+      const toDate = endOfDay(filters.dateTo);
+      result = result.filter((item) => {
+        const itemDate = new Date(item.submitted_at);
+        return !isAfter(itemDate, toDate);
+      });
+    }
+
+    // Status filter
+    if (filters.status !== 'all') {
+      result = result.filter((item) => item.status === filters.status);
+    }
+
+    return result;
+  }, [materialRequests, debouncedSearch, filters]);
+
+  // Filter leave data
+  const filteredLeave = useMemo(() => {
+    let result = leaveRequests;
+
+    // Text search
+    if (debouncedSearch) {
+      const query = debouncedSearch.toLowerCase();
+      result = result.filter(
+        (item) =>
+          item.title?.toLowerCase().includes(query) ||
+          item.leave_type_name?.toLowerCase().includes(query) ||
+          item.reason?.toLowerCase().includes(query)
+      );
+    }
+
+    // Date range filter (uses submitted_at)
+    if (filters.dateFrom) {
+      const fromDate = startOfDay(filters.dateFrom);
+      result = result.filter((item) => {
+        const itemDate = new Date(item.submitted_at);
+        return !isBefore(itemDate, fromDate);
+      });
+    }
+    if (filters.dateTo) {
+      const toDate = endOfDay(filters.dateTo);
+      result = result.filter((item) => {
+        const itemDate = new Date(item.submitted_at);
+        return !isAfter(itemDate, toDate);
+      });
+    }
+
+    // Status filter
+    if (filters.status !== 'all') {
+      result = result.filter((item) => item.status === filters.status);
+    }
+
+    return result;
+  }, [leaveRequests, debouncedSearch, filters]);
 
   // Refetch data when screen comes into focus (e.g., after returning from LogHours)
   useFocusEffect(
@@ -294,6 +440,18 @@ export default function MyActivities() {
     { value: 'leave', label: t('myActivities.leave'), icon: 'calendar' },
   ];
 
+  const renderEmptySearchState = () => (
+    <View style={styles.centerContainer}>
+      <Icon name="magnify" size={48} color={colors.mutedForeground} />
+      <TextComponent variant="body" style={styles.emptyText}>
+        {t('myActivities.filter.noResults')}
+      </TextComponent>
+      <TextComponent variant="caption" style={styles.emptySubtext}>
+        {t('myActivities.filter.noResultsDescription')}
+      </TextComponent>
+    </View>
+  );
+
   const renderHoursTab = () => {
     if (isLoadingHours) {
       return (
@@ -313,9 +471,13 @@ export default function MyActivities() {
       );
     }
 
+    if (filteredHours.length === 0) {
+      return renderEmptySearchState();
+    }
+
     return (
       <FlatList
-        data={hourLogs}
+        data={filteredHours}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Card style={styles.card}>
@@ -346,7 +508,7 @@ export default function MyActivities() {
                     {item.rain_hours > 0 && (
                       <View style={[styles.badge, styles.rainBadge]}>
                         <TextComponent variant="caption" style={styles.rainBadgeText}>
-                          ☔ {t('myActivities.rain')}: {item.rain_hours}h
+                          {t('myActivities.rain')}: {item.rain_hours}h
                         </TextComponent>
                       </View>
                     )}
@@ -391,9 +553,13 @@ export default function MyActivities() {
       );
     }
 
+    if (filteredMaterials.length === 0) {
+      return renderEmptySearchState();
+    }
+
     return (
       <FlatList
-        data={materialRequests}
+        data={filteredMaterials}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Card style={styles.card}>
@@ -474,9 +640,13 @@ export default function MyActivities() {
       );
     }
 
+    if (filteredLeave.length === 0) {
+      return renderEmptySearchState();
+    }
+
     return (
       <FlatList
-        data={leaveRequests}
+        data={filteredLeave}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Card style={styles.card}>
@@ -518,12 +688,41 @@ export default function MyActivities() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppBar showBackButton={canGoBack} />
       <View style={styles.tabsContainer}>
-        <Tabs value={activeTab} onValueChange={setActiveTab} tabs={tabs}>
+        {/* Search and Filter Row */}
+        <View style={styles.searchFilterRow}>
+          <SearchBar
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t('myActivities.filter.searchPlaceholder')}
+            style={styles.searchBar}
+          />
+          <Pressable
+            style={styles.filterButton}
+            onPress={() => setIsFilterModalVisible(true)}
+            accessibilityLabel={t('myActivities.filter.title')}
+            accessibilityRole="button"
+          >
+            <Icon name="filter-variant" size={24} color={colors.gold} />
+            <FilterBadge count={activeFilterCount} />
+          </Pressable>
+        </View>
+
+        <Tabs value={activeTab} onValueChange={handleTabChange} tabs={tabs}>
           {activeTab === 'hours' && renderHoursTab()}
           {activeTab === 'materials' && renderMaterialsTab()}
           {activeTab === 'leave' && renderLeaveTab()}
         </Tabs>
       </View>
+
+      {/* Filter Modal */}
+      <ActivityFilterModal
+        visible={isFilterModalVisible}
+        onClose={() => setIsFilterModalVisible(false)}
+        filters={filters}
+        onApply={setFilters}
+        onReset={() => setFilters(defaultFilters)}
+        showStatusFilter={activeTab !== 'hours'}
+      />
     </SafeAreaView>
   );
 }
@@ -537,6 +736,26 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 100, // Space for blurred app bar
   },
+  searchFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  searchBar: {
+    flex: 1,
+  },
+  filterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.input,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -546,6 +765,12 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.mutedForeground,
     textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  emptySubtext: {
+    color: colors.mutedForeground,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   listContent: {
     padding: spacing.md,
