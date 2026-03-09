@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, Linking, FlatList } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, StyleSheet, Pressable, Linking, FlatList, Image } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PhoneInput } from '@/components/ui/phone-input';
+import { CitySearchInput } from '@/components/ui/city-search-input';
 import { Tabs } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { TextComponent } from '@/components/ui/text';
@@ -26,7 +31,7 @@ import { NotificationSettings } from '@/components/settings/NotificationSettings
 import { supabase } from '@/integrations/supabase/client';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '@/theme';
-import { format } from 'date-fns';
+import { formatLocalizedDate } from '@/utils/dateLocale';
 
 interface ContractData {
   contractType: string;
@@ -76,9 +81,24 @@ export default function Settings() {
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('contract');
 
-  useEffect(() => {
-    loadUserData();
-  }, []);
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editSurname, setEditSurname] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editCityId, setEditCityId] = useState('');
+  const [editCityLabel, setEditCityLabel] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [newAvatarUri, setNewAvatarUri] = useState<string | null>(null);
+  const [userCityLabel, setUserCityLabel] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
 
   const loadUserData = async () => {
     try {
@@ -91,6 +111,9 @@ export default function Settings() {
         setUserEmail(user.email || '');
         setUserId(user.id);
 
+        // Load profile data (avatar, city)
+        await loadProfileData(user.id, user.user_metadata?.city_id);
+
         await loadContractData(user.id);
         await loadPayrollDocuments(user.id);
         await loadCertificates(user.id);
@@ -102,6 +125,186 @@ export default function Settings() {
     }
   };
 
+  const loadProfileData = async (uid: string, cityId?: string) => {
+    try {
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('avatar_url, city_id')
+        .eq('id', uid)
+        .maybeSingle();
+
+      if (profile?.avatar_url) {
+        setAvatarUrl(profile.avatar_url);
+      }
+
+      const cid = cityId || profile?.city_id;
+      if (cid) {
+        setEditCityId(cid);
+        // Load city label
+        const { data: cityData } = await (supabase as any)
+          .from('cities')
+          .select('full_location_name, city_name')
+          .eq('id', cid)
+          .maybeSingle();
+
+        if (cityData) {
+          const label = cityData.full_location_name || cityData.city_name || '';
+          setUserCityLabel(label);
+          setEditCityLabel(label);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading profile data:', error);
+    }
+  };
+
+  const searchCities = async (query: string) => {
+    try {
+      const { data, error } = await supabase
+        .rpc('search_cities', { search_query: query, result_limit: 20 });
+
+      if (error) return [];
+
+      return (data || []).map((city: any) => ({
+        label: city.full_location_name || city.city_name,
+        value: city.id.toString(),
+      }));
+    } catch {
+      return [];
+    }
+  };
+
+  const handleStartEdit = () => {
+    setEditName(userName);
+    setEditSurname(userSurname);
+    setEditPhone(userPhone);
+    setEditEmail(userEmail);
+    setNewAvatarUri(null);
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setNewAvatarUri(null);
+  };
+
+  const handlePickImage = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', maxWidth: 400, maxHeight: 400, quality: 0.8 },
+      (response) => {
+        if (response.didCancel || response.errorCode) return;
+        const asset = response.assets?.[0];
+        if (asset?.uri) {
+          setNewAvatarUri(asset.uri);
+        }
+      }
+    );
+  };
+
+  const handleSaveProfile = async () => {
+    if (!userId) return;
+    if (!editName.trim() || !editSurname.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: t('common.required'),
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let uploadedAvatarUrl = avatarUrl;
+
+      // Upload new avatar if selected
+      if (newAvatarUri) {
+        const fileName = `${userId}/${Date.now()}.jpg`;
+        const response = await fetch(newAvatarUri);
+        const blob = await response.blob();
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, blob, { contentType: 'image/jpeg', upsert: true });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          uploadedAvatarUrl = urlData.publicUrl;
+        }
+      }
+
+      // Update auth metadata
+      const emailChanged = editEmail !== userEmail;
+      const updatePayload: any = {
+        data: {
+          name: editName.trim(),
+          surname: editSurname.trim(),
+          phone: editPhone,
+          city_id: editCityId,
+        },
+      };
+      if (emailChanged) {
+        updatePayload.email = editEmail.trim();
+      }
+
+      const { error: authError } = await supabase.auth.updateUser(updatePayload);
+      if (authError) throw authError;
+
+      // Upsert profiles table
+      const { error: profileError } = await (supabase as any)
+        .from('profiles')
+        .upsert({
+          id: userId,
+          name: editName.trim(),
+          surname: editSurname.trim(),
+          phone: editPhone,
+          email: userEmail, // Don't update email here — it updates after email change confirmation
+          city_id: editCityId || null,
+          avatar_url: uploadedAvatarUrl,
+          has_completed_onboarding: true,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+      }
+
+      // Update local state
+      setUserName(editName.trim());
+      setUserSurname(editSurname.trim());
+      setUserPhone(editPhone);
+      if (uploadedAvatarUrl) setAvatarUrl(uploadedAvatarUrl);
+      if (editCityLabel) setUserCityLabel(editCityLabel);
+
+      if (emailChanged) {
+        setUserEmail(editEmail.trim());
+        Toast.show({
+          type: 'success',
+          text1: t('common.success'),
+          text2: t('profile.emailChangeNote'),
+        });
+      } else {
+        Toast.show({
+          type: 'success',
+          text1: t('common.success'),
+          text2: t('profile.profileUpdated'),
+        });
+      }
+
+      setIsEditing(false);
+      setNewAvatarUri(null);
+    } catch (error: any) {
+      Toast.show({
+        type: 'error',
+        text1: t('common.error'),
+        text2: error.message || 'Failed to update profile',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const loadContractData = async (userId: string) => {
     try {
       const { data: worker, error } = await (supabase as any)
@@ -109,12 +312,14 @@ export default function Settings() {
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error || !worker) {
+      if (error) {
         console.error('Error loading contract data:', error);
         return;
       }
+
+      if (!worker) return;
 
       setCompanyId(worker.company_id);
 
@@ -131,7 +336,7 @@ export default function Settings() {
       setContractData({
         contractType: contractTypeName,
         startDate: worker.contract_start_date
-          ? format(new Date(worker.contract_start_date), currentLang === 'it' ? 'dd/MM/yyyy' : 'MM/dd/yyyy')
+          ? formatLocalizedDate(new Date(worker.contract_start_date), 'PP')
           : t('profile.notAvailable'),
         position: worker.role_display_name || t('profile.worker'),
         department: workAreasStr,
@@ -247,12 +452,12 @@ export default function Settings() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
-        redirectTo: 'monolite-hr://auth',
+        redirectTo: 'monolite-hr://auth/callback',
       });
 
       if (error) throw error;
 
-      const resetUrl = 'monolite-hr://auth?type=recovery';
+      const resetUrl = 'monolite-hr://auth/callback';
 
       const { error: functionError } = await supabase.functions.invoke(
         'send-password-reset-email',
@@ -326,7 +531,7 @@ export default function Settings() {
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'dd/MM/yyyy');
+      return formatLocalizedDate(new Date(dateString), 'dd/MM/yyyy');
     } catch {
       return dateString;
     }
@@ -349,17 +554,17 @@ export default function Settings() {
 
   const getStatusBadge = (status: string, expiryDate: string | null) => {
     if (status === 'expired' || (expiryDate && new Date(expiryDate) < new Date())) {
-      return <Badge variant="destructive">Expired</Badge>;
+      return <Badge variant="destructive">{t('profile.statusExpired')}</Badge>;
     }
     if (expiryDate) {
       const daysUntilExpiry = Math.floor(
         (new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
       );
       if (daysUntilExpiry <= 30) {
-        return <Badge variant="secondary">Expiring Soon</Badge>;
+        return <Badge variant="secondary">{t('profile.statusExpiringSoon')}</Badge>;
       }
     }
-    return <Badge variant="default">Valid</Badge>;
+    return <Badge variant="default">{t('profile.statusValid')}</Badge>;
   };
 
   const openDocument = (url: string) => {
@@ -383,70 +588,169 @@ export default function Settings() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppBar />
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        extraScrollHeight={20}
       >
 
         {/* User Info Card */}
         <Card style={styles.card}>
           <CardContent style={styles.userCardContent}>
             <View style={styles.userHeader}>
-              <View style={styles.userIconContainer}>
-                <Icon name="account" size={32} color={colors.gold} />
-              </View>
-              <View>
+              {/* Avatar */}
+              <Pressable onPress={isEditing ? handlePickImage : undefined} style={styles.avatarContainer}>
+                {(newAvatarUri || avatarUrl) ? (
+                  <Image
+                    source={{ uri: newAvatarUri || avatarUrl || '' }}
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <View style={styles.avatarFallback}>
+                    <TextComponent variant="h3" style={styles.avatarText}>
+                      {(userName.charAt(0) + userSurname.charAt(0)).toUpperCase() || '?'}
+                    </TextComponent>
+                  </View>
+                )}
+                {isEditing && (
+                  <View style={styles.cameraOverlay}>
+                    <Icon name="camera" size={16} color="#FFFFFF" />
+                  </View>
+                )}
+              </Pressable>
+              <View style={{ flex: 1 }}>
                 <TextComponent variant="h3" style={styles.userName}>
-                  {userName}
+                  {userName} {userSurname}
                 </TextComponent>
                 <TextComponent variant="caption" style={styles.userSubtitle}>
                   {t('profile.accountProfile')}
                 </TextComponent>
               </View>
+              {!isEditing && (
+                <Pressable onPress={handleStartEdit} style={styles.editButton}>
+                  <Icon name="pencil" size={20} color={colors.gold} />
+                </Pressable>
+              )}
             </View>
 
-            <View style={styles.userInfo}>
-              <View style={styles.infoRow}>
-                <TextComponent variant="caption" style={styles.infoLabel}>
-                  {t('profile.name')}
-                </TextComponent>
-                <View style={styles.infoValueContainer}>
-                  <TextComponent variant="body" style={styles.infoValue}>
-                    {userName}
-                  </TextComponent>
+            {isEditing ? (
+              <View style={styles.editForm}>
+                <Input
+                  label={t('profile.name')}
+                  value={editName}
+                  onChangeText={setEditName}
+                  autoCapitalize="words"
+                />
+                <Input
+                  label={t('profile.surname')}
+                  value={editSurname}
+                  onChangeText={setEditSurname}
+                  autoCapitalize="words"
+                />
+                <PhoneInput
+                  label={t('profile.phone')}
+                  value={editPhone}
+                  onChangeText={setEditPhone}
+                  placeholder={t('auth.phonePlaceholder')}
+                />
+                <Input
+                  label={t('profile.email')}
+                  value={editEmail}
+                  onChangeText={setEditEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                <CitySearchInput
+                  label={t('profile.city')}
+                  placeholder={t('auth.searchCity')}
+                  value={editCityId}
+                  onValueChange={(value, label) => {
+                    setEditCityId(value);
+                    setEditCityLabel(label || '');
+                  }}
+                  onSearch={searchCities}
+                  selectedCityLabel={editCityLabel}
+                />
+
+                <View style={styles.editActions}>
+                  <Button
+                    variant="outline"
+                    onPress={handleCancelEdit}
+                    style={styles.editActionButton}
+                  >
+                    <TextComponent variant="body" style={styles.cancelButtonText}>
+                      {t('profile.cancelEdit')}
+                    </TextComponent>
+                  </Button>
+                  <Button
+                    onPress={handleSaveProfile}
+                    style={styles.editActionButton}
+                    loading={saving}
+                  >
+                    <TextComponent variant="body" style={styles.saveButtonText}>
+                      {t('profile.saveProfile')}
+                    </TextComponent>
+                  </Button>
                 </View>
               </View>
-              <View style={styles.infoRow}>
-                <TextComponent variant="caption" style={styles.infoLabel}>
-                  {t('profile.surname')}
-                </TextComponent>
-                <View style={styles.infoValueContainer}>
-                  <TextComponent variant="body" style={styles.infoValue}>
-                    {userSurname}
+            ) : (
+              <View style={styles.userInfo}>
+                <View style={styles.infoRow}>
+                  <TextComponent variant="caption" style={styles.infoLabel}>
+                    {t('profile.name')}
                   </TextComponent>
+                  <View style={styles.infoValueContainer}>
+                    <TextComponent variant="body" style={styles.infoValue}>
+                      {userName}
+                    </TextComponent>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.infoRow}>
-                <TextComponent variant="caption" style={styles.infoLabel}>
-                  {t('profile.phone')}
-                </TextComponent>
-                <View style={styles.infoValueContainer}>
-                  <TextComponent variant="body" style={styles.infoValue}>
-                    {userPhone}
+                <View style={styles.infoRow}>
+                  <TextComponent variant="caption" style={styles.infoLabel}>
+                    {t('profile.surname')}
                   </TextComponent>
+                  <View style={styles.infoValueContainer}>
+                    <TextComponent variant="body" style={styles.infoValue}>
+                      {userSurname}
+                    </TextComponent>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.infoRow}>
-                <TextComponent variant="caption" style={styles.infoLabel}>
-                  {t('profile.email')}
-                </TextComponent>
-                <View style={styles.infoValueContainer}>
-                  <TextComponent variant="body" style={styles.infoValue}>
-                    {userEmail}
+                <View style={styles.infoRow}>
+                  <TextComponent variant="caption" style={styles.infoLabel}>
+                    {t('profile.phone')}
                   </TextComponent>
+                  <View style={styles.infoValueContainer}>
+                    <TextComponent variant="body" style={styles.infoValue}>
+                      {userPhone || t('profile.notAvailable')}
+                    </TextComponent>
+                  </View>
                 </View>
+                <View style={styles.infoRow}>
+                  <TextComponent variant="caption" style={styles.infoLabel}>
+                    {t('profile.email')}
+                  </TextComponent>
+                  <View style={styles.infoValueContainer}>
+                    <TextComponent variant="body" style={styles.infoValue}>
+                      {userEmail}
+                    </TextComponent>
+                  </View>
+                </View>
+                {userCityLabel ? (
+                  <View style={styles.infoRow}>
+                    <TextComponent variant="caption" style={styles.infoLabel}>
+                      {t('profile.city')}
+                    </TextComponent>
+                    <View style={styles.infoValueContainer}>
+                      <TextComponent variant="body" style={styles.infoValue}>
+                        {userCityLabel}
+                      </TextComponent>
+                    </View>
+                  </View>
+                ) : null}
               </View>
-            </View>
+            )}
           </CardContent>
         </Card>
 
@@ -692,7 +996,7 @@ export default function Settings() {
               ) : (
                 <View style={styles.centerContainer}>
                   <TextComponent variant="body" style={styles.emptyText}>
-                    No certificates available
+                    {t('profile.noCertificates')}
                   </TextComponent>
                 </View>
               )}
@@ -776,7 +1080,7 @@ export default function Settings() {
             </Pressable>
           </CardContent>
         </Card>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -820,10 +1124,61 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginBottom: spacing.lg,
   },
-  userIconContainer: {
-    padding: spacing.md,
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.xl,
+  avatarContainer: {
+    position: 'relative',
+  },
+  avatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  avatarFallback: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: colors.primaryForeground,
+    fontWeight: '700',
+    fontSize: 20,
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.gold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.card,
+  },
+  editButton: {
+    padding: spacing.sm,
+  },
+  editForm: {
+    gap: spacing.md,
+  },
+  editActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  editActionButton: {
+    flex: 1,
+  },
+  cancelButtonText: {
+    color: colors.foreground,
+    fontWeight: '600',
+  },
+  saveButtonText: {
+    color: colors.primaryForeground,
+    fontWeight: '600',
   },
   userName: {
     color: colors.foreground,

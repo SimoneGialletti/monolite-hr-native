@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,23 @@ import { SwitchComponent as Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { TextComponent } from '@/components/ui/text';
 import { Card, CardContent } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import { supabase } from '@/integrations/supabase/client';
+import { subDays } from 'date-fns';
+import { toLocalDateString } from '@/utils/dateLocale';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserCompany } from '@/hooks/useUserCompany';
 import Toast from 'react-native-toast-message';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { colors, spacing, borderRadius, goldGlow } from '@/theme';
 
 interface WorkEntry {
@@ -36,6 +50,8 @@ interface WorkEntry {
 interface Location {
   id: string;
   name: string;
+  city: string | null;
+  address: string | null;
   location_type_id: string;
   location_type_name: string;
   reference_type: string | null;
@@ -70,6 +86,12 @@ interface CostCenter {
 
 type TrackingMode = 'MAPPED_CATEGORIES' | 'DIRECT_COST_CENTER';
 
+type LogHoursRouteParams = {
+  LogHours: {
+    initialDate?: string; // ISO date string
+  };
+};
+
 interface TodayLoggedHour {
   hours: number;
   location_name: string;
@@ -83,7 +105,11 @@ interface TodayLoggedHour {
 export default function LogHours() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const route = useRoute<RouteProp<LogHoursRouteParams, 'LogHours'>>();
   const { user } = useAuth();
+  const { hasCompany } = useUserCompany();
+  const [showNoCompanyDialog, setShowNoCompanyDialog] = useState(false);
+
   const [site, setSite] = useState('');
   const [workEntries, setWorkEntries] = useState<WorkEntry[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -100,9 +126,18 @@ export default function LogHours() {
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
   const [trackingMode, setTrackingMode] = useState<TrackingMode>('MAPPED_CATEGORIES');
   const [contractedDailyHours, setContractedDailyHours] = useState<number>(8.0);
-  const [maxHierarchyLevel, setMaxHierarchyLevel] = useState<number>(3);
+  const [maxHierarchyLevel, setMaxHierarchyLevel] = useState<number>(1);
   const [todayLoggedHours, setTodayLoggedHours] = useState<TodayLoggedHour[]>([]);
   const [totalLoggedHours, setTotalLoggedHours] = useState<number>(0);
+  const [supEqualsEstimateType, setSupEqualsEstimateType] = useState<boolean>(false);
+  const [usingNormalizedCostCenters, setUsingNormalizedCostCenters] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    if (route.params?.initialDate) {
+      const parsedDate = new Date(route.params.initialDate);
+      return isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+    }
+    return new Date();
+  });
 
   useEffect(() => {
     if (user?.id) {
@@ -125,6 +160,7 @@ export default function LogHours() {
     if (site) {
       loadTrackingMode();
       loadCostCenters();
+      loadProjectEstimateSettings();
     }
   }, [site]);
 
@@ -132,14 +168,22 @@ export default function LogHours() {
     if (!user?.id) return;
 
     try {
-      const { data: totalData } = await (supabase as any)
-        .from('v_workers_total_hours_today')
-        .select('total_hours')
-        .eq('user_id', user.id)
-        .single();
+      const localDate = toLocalDateString(new Date());
 
-      setTotalLoggedHours(totalData?.total_hours || 0);
+      // Get total hours using RPC
+      const { data: totalData, error: totalError } = await (supabase as any)
+        .rpc('get_worker_hours_for_date', {
+          p_user_id: user.id,
+          p_work_date: localDate,
+        });
 
+      if (totalError) {
+        console.error('Error loading total hours:', totalError);
+      } else {
+        setTotalLoggedHours(totalData || 0);
+      }
+
+      // Get detailed entries
       const { data: hoursData } = await (supabase as any)
         .from('work_hours')
         .select(`
@@ -154,7 +198,7 @@ export default function LogHours() {
           )
         `)
         .eq('user_id', user.id)
-        .eq('work_date', new Date().toISOString().split('T')[0])
+        .eq('work_date', localDate)
         .order('created_at', { ascending: false });
 
       if (hoursData) {
@@ -168,6 +212,8 @@ export default function LogHours() {
           cost_center_sub_name: entry.construction_work_hours_details?.[0]?.cost_centers_sub?.name || null,
         }));
         setTodayLoggedHours(formatted);
+      } else {
+        setTodayLoggedHours([]);
       }
     } catch (error) {
       console.error('Error loading today logged hours:', error);
@@ -182,17 +228,14 @@ export default function LogHours() {
         .from('user_companies')
         .select('company_id, contracted_daily_hours, worker_category_id, roles(name)')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading company:', error);
-        Toast.show({
-          type: 'error',
-          text1: t('common.error'),
-          text2: 'Failed to load company information',
-        });
         return;
       }
+
+      if (!data) return;
 
       setCompanyId(data?.company_id || null);
       setContractedDailyHours(data?.contracted_daily_hours || 8.0);
@@ -270,6 +313,8 @@ export default function LogHours() {
 
     try {
       const selectedSite = locations.find((s) => s.id === site);
+
+      // Case 1: No site selected - load company cost centers
       if (!selectedSite?.project_id) {
         const { data, error } = await (supabase as any)
           .from('cost_centers')
@@ -283,10 +328,20 @@ export default function LogHours() {
           return;
         }
 
-        setCostCenters((data as any) || []);
+        const costCenterData = (data as any) || [];
+        setCostCenters(costCenterData);
+        setUsingNormalizedCostCenters(false);
+
+        // Calculate maxHierarchyLevel from company cost centers
+        const maxLevel = costCenterData.reduce(
+          (max: number, cc: CostCenter) => Math.max(max, cc.hierarchy_level),
+          0
+        );
+        setMaxHierarchyLevel(maxLevel);
         return;
       }
 
+      // Case 2: Site selected - try project cost centers first
       const { data, error } = await (supabase as any)
         .from('cost_centers')
         .select('id, code, name, description, hierarchy_level, parent_ids')
@@ -300,7 +355,38 @@ export default function LogHours() {
         return;
       }
 
-      const costCenterData = (data as any) || [];
+      let costCenterData = (data as any) || [];
+
+      // Case 3: Fallback to normalized_cost_centers if project has none
+      if (costCenterData.length === 0) {
+        const { data: normalizedData, error: normalizedError } = await (supabase as any)
+          .from('normalized_cost_centers')
+          .select('id, code_numeric, canonical_name, description, hierarchy_level, parent_id')
+          .eq('company_id', companyId)
+          .eq('is_active', true)
+          .eq('hierarchy_level', 2) // Only CAT level for normalized cost centers
+          .order('code_numeric');
+
+        if (normalizedError) {
+          console.error('Error loading normalized cost centers:', normalizedError);
+          return;
+        }
+
+        // Map normalized_cost_centers to CostCenter interface (only CAT level)
+        costCenterData = (normalizedData || []).map((ncc: any) => ({
+          id: ncc.id,
+          code: ncc.code_numeric,
+          name: ncc.canonical_name,
+          description: ncc.description,
+          hierarchy_level: 1, // Treat as level 1 so it shows as the first/only selector
+          parent_ids: null,
+        }));
+
+        setUsingNormalizedCostCenters(true);
+      } else {
+        setUsingNormalizedCostCenters(false);
+      }
+
       setCostCenters(costCenterData);
 
       const maxLevel = costCenterData.reduce(
@@ -310,6 +396,54 @@ export default function LogHours() {
       setMaxHierarchyLevel(maxLevel);
     } catch (err) {
       console.error('Error loading cost centers:', err);
+    }
+  };
+
+  const loadProjectEstimateSettings = async () => {
+    const selectedSite = locations.find((s) => s.id === site);
+    if (!selectedSite?.project_id) {
+      setSupEqualsEstimateType(false);
+      return;
+    }
+
+    try {
+      // Get active project estimates with structure level info
+      const { data, error } = await (supabase as any)
+        .from('project_estimates')
+        .select(`
+          sup_equals_estimate_type,
+          structure_level_id,
+          estimate_structure_levels!inner(level_number)
+        `)
+        .eq('project_id', selectedSite.project_id)
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('Error loading project estimate settings:', error);
+        setSupEqualsEstimateType(false);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Check if any estimate has sup_equals_estimate_type = true
+        const hasSupEqualsEstimateType = data.some((pe: any) => pe.sup_equals_estimate_type === true);
+        setSupEqualsEstimateType(hasSupEqualsEstimateType);
+
+        // Get the max level_number from all active estimates
+        const maxLevel = data.reduce((max: number, pe: any) => {
+          const levelNumber = pe.estimate_structure_levels?.level_number || 0;
+          return Math.max(max, levelNumber);
+        }, 0);
+
+        if (maxLevel > 0) {
+          setMaxHierarchyLevel(maxLevel);
+        }
+      } else {
+        setSupEqualsEstimateType(false);
+      }
+    } catch (err) {
+      console.error('Error loading project estimate settings:', err);
+      setSupEqualsEstimateType(false);
     }
   };
 
@@ -351,6 +485,8 @@ export default function LogHours() {
         .select(`
           id,
           name,
+          city,
+          address,
           location_type_id,
           reference_type,
           reference_id,
@@ -400,6 +536,8 @@ export default function LogHours() {
       const formattedLocations: Location[] = locationsData.map((loc: any) => ({
         id: loc.id,
         name: loc.name,
+        city: loc.city || null,
+        address: loc.address || null,
         location_type_id: loc.location_type_id,
         location_type_name: loc.location_types?.name || '',
         reference_type: loc.reference_type,
@@ -508,7 +646,7 @@ export default function LogHours() {
       costCenterCatName: '',
       costCenterSubId: '',
       costCenterSubName: '',
-      hours: '',
+      hours: '8',
       didRain: false,
       rainHours: '',
     };
@@ -577,7 +715,23 @@ export default function LogHours() {
     const costCenter = costCenters.find((cc) => cc.id === catId);
     if (!costCenter) return;
 
+    let supUpdates = {};
+
+    // If supEqualsEstimateType is true, auto-set SUP from CAT's parent_ids
+    if (supEqualsEstimateType && costCenter.parent_ids && costCenter.parent_ids.length > 0) {
+      // The first parent_id is the SUP (level 1)
+      const parentSupId = costCenter.parent_ids[0];
+      const parentSup = costCenters.find((cc) => cc.id === parentSupId);
+      if (parentSup) {
+        supUpdates = {
+          costCenterSupId: parentSup.id,
+          costCenterSupName: `${parentSup.code} - ${parentSup.name}`,
+        };
+      }
+    }
+
     updateWorkEntry(entryId, {
+      ...supUpdates,
       costCenterCatId: catId,
       costCenterCatName: `${costCenter.code} - ${costCenter.name}`,
       costCenterSubId: '',
@@ -644,6 +798,11 @@ export default function LogHours() {
   };
 
   const handleSubmit = async () => {
+    if (!hasCompany) {
+      setShowNoCompanyDialog(true);
+      return;
+    }
+
     if (!site) {
       Toast.show({
         type: 'error',
@@ -772,10 +931,9 @@ export default function LogHours() {
 
       const hourlyRate = userCompany?.hourly_rate || 0;
 
-      const today = new Date();
-      const todayString = today.toISOString().split('T')[0];
-      const isSundayToday = isSunday(today);
-      const isHolidayToday = isHoliday(today);
+      const workDateString = toLocalDateString(selectedDate);
+      const isSundaySelected = isSunday(selectedDate);
+      const isHolidaySelected = isHoliday(selectedDate);
 
       for (const entry of workEntries) {
         const totalHours = parseFloat(entry.hours);
@@ -792,7 +950,7 @@ export default function LogHours() {
             company_id: companyId,
             project_id: selectedLocation.project_id,
             location_id: selectedLocation.id,
-            work_date: todayString,
+            work_date: workDateString,
             work_type_id: workTypeId,
             work_status_type_id: presentWorkStatusId,
             hours: hours,
@@ -834,9 +992,14 @@ export default function LogHours() {
           }
 
           if (trackingMode === 'DIRECT_COST_CENTER') {
-            workHoursRecord.cost_center_sup_id = entry.costCenterSupId || null;
-            workHoursRecord.cost_center_cat_id = entry.costCenterCatId || null;
-            workHoursRecord.cost_center_sub_id = entry.costCenterSubId || null;
+            if (usingNormalizedCostCenters) {
+              // Use normalized_cost_center_id when falling back to normalized cost centers
+              workHoursRecord.normalized_cost_center_id = entry.costCenterSupId || null;
+            } else {
+              workHoursRecord.cost_center_sup_id = entry.costCenterSupId || null;
+              workHoursRecord.cost_center_cat_id = entry.costCenterCatId || null;
+              workHoursRecord.cost_center_sub_id = entry.costCenterSubId || null;
+            }
           }
 
           const { data: workHoursData, error: workHoursError } = await (supabase as any)
@@ -866,7 +1029,8 @@ export default function LogHours() {
             detailsRecord.rain_hours = rainHours;
           }
 
-          if (trackingMode === 'DIRECT_COST_CENTER') {
+          if (trackingMode === 'DIRECT_COST_CENTER' && !usingNormalizedCostCenters) {
+            // Only set cost_center_id when using regular cost centers (not normalized)
             const finalCostCenterId = entry.costCenterSubId || entry.costCenterCatId || entry.costCenterSupId;
             detailsRecord.cost_center_id = finalCostCenterId;
           }
@@ -883,10 +1047,10 @@ export default function LogHours() {
         let regularWorkTypeId: string;
         let overtimeWorkTypeId: string;
 
-        if (isHolidayToday) {
+        if (isHolidaySelected) {
           regularWorkTypeId = workTypes.find((wt) => wt.name === 'holiday')?.id || '';
           overtimeWorkTypeId = workTypes.find((wt) => wt.name === 'holiday')?.id || '';
-        } else if (isSundayToday) {
+        } else if (isSundaySelected) {
           regularWorkTypeId = workTypes.find((wt) => wt.name === 'sunday')?.id || '';
           overtimeWorkTypeId = workTypes.find((wt) => wt.name === 'sunday')?.id || '';
         } else {
@@ -935,6 +1099,7 @@ export default function LogHours() {
   const locationOptions: SelectOption[] = locations.map((loc) => ({
     label: loc.name,
     value: loc.id,
+    subtitle: [loc.city, loc.address].filter(Boolean).join(' - ') || undefined,
   }));
 
   const macroCategoryOptions: SelectOption[] = macroCategories.map((cat) => ({
@@ -959,6 +1124,12 @@ export default function LogHours() {
           value: cc.id,
         }))
       : [];
+
+    // All CAT options (used when supEqualsEstimateType is true)
+    const allCatOptions: SelectOption[] = getCostCentersByLevel(2).map((cc) => ({
+      label: `${cc.code} - ${cc.name}`,
+      value: cc.id,
+    }));
 
     const subOptions: SelectOption[] = entry.costCenterCatId
       ? getCostCentersByParent(entry.costCenterCatId, 3).map((cc) => ({
@@ -1001,35 +1172,52 @@ export default function LogHours() {
             </>
           )}
 
-          {trackingMode === 'DIRECT_COST_CENTER' && (
-            <>
-              <Select
-                label={t('logHours.supCostCenter')}
-                placeholder={t('logHours.selectSup')}
-                value={entry.costCenterSupId}
-                onValueChange={(value) => handleSupCostCenterChange(entry.id, value)}
-                options={supOptions}
-              />
-              {maxHierarchyLevel >= 2 && entry.costCenterSupId && (
-                <Select
-                  label={t('logHours.catCostCenter')}
-                  placeholder={t('logHours.selectCat')}
-                  value={entry.costCenterCatId}
-                  onValueChange={(value) => handleCatCostCenterChange(entry.id, value)}
-                  options={catOptions}
-                />
-              )}
-              {maxHierarchyLevel >= 3 && entry.costCenterCatId && (
-                <Select
-                  label={t('logHours.subCostCenter')}
-                  placeholder={t('logHours.selectSub')}
-                  value={entry.costCenterSubId}
-                  onValueChange={(value) => handleSubCostCenterChange(entry.id, value)}
-                  options={subOptions}
-                />
-              )}
-            </>
-          )}
+          {trackingMode === 'DIRECT_COST_CENTER' && (() => {
+            // Calculate how many selectors are CURRENTLY visible to the user
+            const showLevel1 = !supEqualsEstimateType;
+            const showLevel2 = maxHierarchyLevel >= 2 && (supEqualsEstimateType || entry.costCenterSupId);
+            const showLevel3 = maxHierarchyLevel >= 3 && entry.costCenterCatId;
+
+            const currentlyVisibleCount = (showLevel1 ? 1 : 0) + (showLevel2 ? 1 : 0) + (showLevel3 ? 1 : 0);
+            const showLevelNumbers = currentlyVisibleCount > 1;
+
+            return (
+              <>
+                {/* Level 1 selector - HIDDEN when supEqualsEstimateType is true */}
+                {showLevel1 && (
+                  <Select
+                    label={showLevelNumbers ? t('logHours.jobTypeLevel1') : t('logHours.jobType')}
+                    placeholder={showLevelNumbers ? t('logHours.selectLevel1') : t('logHours.selectJobType')}
+                    value={entry.costCenterSupId}
+                    onValueChange={(value) => handleSupCostCenterChange(entry.id, value)}
+                    options={supOptions}
+                  />
+                )}
+
+                {/* Level 2 selector - show when supEqualsEstimateType is true OR Level 1 is selected */}
+                {showLevel2 && (
+                  <Select
+                    label={showLevelNumbers ? t('logHours.jobTypeLevel2') : t('logHours.jobType')}
+                    placeholder={showLevelNumbers ? t('logHours.selectLevel2') : t('logHours.selectJobType')}
+                    value={entry.costCenterCatId}
+                    onValueChange={(value) => handleCatCostCenterChange(entry.id, value)}
+                    options={supEqualsEstimateType ? allCatOptions : catOptions}
+                  />
+                )}
+
+                {/* Level 3 selector */}
+                {showLevel3 && (
+                  <Select
+                    label={t('logHours.jobTypeLevel3')}
+                    placeholder={t('logHours.selectLevel3')}
+                    value={entry.costCenterSubId}
+                    onValueChange={(value) => handleSubCostCenterChange(entry.id, value)}
+                    options={subOptions}
+                  />
+                )}
+              </>
+            );
+          })()}
 
           <Input
             label={t('logHours.hoursWorked')}
@@ -1079,6 +1267,7 @@ export default function LogHours() {
   };
 
   return (
+    <>
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -1095,7 +1284,7 @@ export default function LogHours() {
           <Badge variant="outline">
             {trackingMode === 'MAPPED_CATEGORIES'
               ? t('logHours.categoryBasedTracking')
-              : t('logHours.costCenterTracking')}
+              : t('logHours.jobTypeTracking')}
           </Badge>
         )}
         {getDayTypeLabel() && (
@@ -1109,6 +1298,53 @@ export default function LogHours() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* What I have done today section */}
+        <Card style={styles.todaySummaryCard}>
+          <CardContent style={styles.cardContent}>
+            <View style={styles.todaySummaryHeader}>
+              <Icon name="clipboard-check-outline" size={24} color={colors.gold} />
+              <TextComponent variant="h4" style={styles.todaySummaryTitle}>
+                {t('logHours.whatIHaveDoneToday')}
+              </TextComponent>
+              {totalLoggedHours > 0 && (
+                <TextComponent variant="h3" style={styles.todaySummaryHours}>
+                  {totalLoggedHours.toFixed(1)}h
+                </TextComponent>
+              )}
+            </View>
+            {totalLoggedHours === 0 ? (
+              <TextComponent variant="body" style={styles.noHoursText}>
+                {t('logHours.noHoursLoggedYet')}
+              </TextComponent>
+            ) : (
+              todayLoggedHours.map((entry, index) => (
+                <View key={index} style={styles.todayLoggedItem}>
+                  <View style={styles.todayLoggedItemRow}>
+                    <TextComponent variant="body" style={styles.todayLoggedLocation}>
+                      {entry.location_name}
+                    </TextComponent>
+                    <TextComponent variant="body" style={styles.todayLoggedHours}>
+                      {entry.hours.toFixed(1)}h
+                    </TextComponent>
+                  </View>
+                  <TextComponent variant="caption" style={styles.todayLoggedCategory}>
+                    {entry.macro_category_name && entry.category_name && (
+                      <>{entry.macro_category_name} → {entry.category_name}</>
+                    )}
+                    {entry.cost_center_sup_name && (
+                      <>
+                        {entry.cost_center_sup_name}
+                        {entry.cost_center_cat_name && ` → ${entry.cost_center_cat_name}`}
+                        {entry.cost_center_sub_name && ` → ${entry.cost_center_sub_name}`}
+                      </>
+                    )}
+                  </TextComponent>
+                </View>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
         <Card style={styles.card}>
           <CardContent style={styles.cardContent}>
             <Select
@@ -1125,6 +1361,15 @@ export default function LogHours() {
                 {t('logHours.noLocationsMessage')}
               </TextComponent>
             )}
+
+            <DatePicker
+              label={t('logHours.workDate')}
+              placeholder={t('logHours.selectDate')}
+              value={selectedDate}
+              onValueChange={(date) => setSelectedDate(date || new Date())}
+              minimumDate={subDays(new Date(), 30)}
+              maximumDate={new Date()}
+            />
           </CardContent>
         </Card>
 
@@ -1258,6 +1503,28 @@ export default function LogHours() {
         )}
       </ScrollView>
     </SafeAreaView>
+
+    {/* No Company Dialog */}
+    <AlertDialog open={showNoCompanyDialog} onOpenChange={setShowNoCompanyDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('noCompany.title')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('noCompany.message')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onPress={() => setShowNoCompanyDialog(false)}>
+            {t('noCompany.close')}
+          </AlertDialogCancel>
+          <AlertDialogAction onPress={() => {
+            setShowNoCompanyDialog(false);
+            Linking.openURL('https://monolite-building.lovable.app/');
+          }}>
+            {t('noCompany.createCompany')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
@@ -1295,6 +1562,52 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: spacing.lg,
+  },
+  todaySummaryCard: {
+    marginBottom: spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.gold,
+  },
+  todaySummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  todaySummaryTitle: {
+    flex: 1,
+    color: colors.foreground,
+  },
+  todaySummaryHours: {
+    color: colors.gold,
+    fontWeight: '700',
+  },
+  noHoursText: {
+    color: colors.mutedForeground,
+    fontStyle: 'italic',
+  },
+  todayLoggedItem: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  todayLoggedItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  todayLoggedLocation: {
+    color: colors.foreground,
+    fontWeight: '500',
+    flex: 1,
+  },
+  todayLoggedHours: {
+    color: colors.gold,
+    fontWeight: '600',
+  },
+  todayLoggedCategory: {
+    color: colors.mutedForeground,
+    marginTop: 2,
   },
   cardContent: {
     padding: spacing.lg,
@@ -1541,5 +1854,18 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: spacing.md,
+  },
+  infoMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.gold + '15',
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    gap: spacing.xs,
+  },
+  infoText: {
+    color: colors.gold,
+    flex: 1,
   },
 });

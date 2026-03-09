@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Platform, Pressable } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
 import { ModalComponent } from './modal';
 import { Button } from './button';
 import { TextComponent } from './text';
 import { colors, spacing, borderRadius } from '@/theme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { formatLocalizedDate } from '@/utils/dateLocale';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/config';
 
 export interface DatePickerProps {
   value?: Date;
@@ -21,14 +23,17 @@ export interface DatePickerProps {
 export const DatePicker: React.FC<DatePickerProps> = ({
   value,
   onValueChange,
-  placeholder = 'Pick a date',
+  placeholder,
   label,
   minimumDate,
   maximumDate,
   disabled = false,
 }) => {
+  const { t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
   const [tempDate, setTempDate] = useState(value || new Date());
+
+  const displayPlaceholder = placeholder || t('logHours.selectDate');
 
   const handleConfirm = () => {
     onValueChange(tempDate);
@@ -58,7 +63,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             variant="body"
             style={[styles.pickerText, !value && styles.placeholder]}
           >
-            {value ? format(value, 'PPP') : placeholder}
+            {value ? formatLocalizedDate(value, 'PPP') : displayPlaceholder}
           </TextComponent>
         </View>
       </Pressable>
@@ -73,6 +78,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               value={tempDate}
               mode="date"
               display="spinner"
+              locale={i18n.language}
               onChange={(event, selectedDate) => {
                 if (selectedDate) {
                   setTempDate(selectedDate);
@@ -84,10 +90,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             />
             <View style={styles.modalButtons}>
               <Button variant="outline" onPress={handleCancel} style={styles.modalButton}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button onPress={handleConfirm} style={styles.modalButton}>
-                Confirm
+                {t('common.confirm')}
               </Button>
             </View>
           </View>

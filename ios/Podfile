@@ -5,7 +5,7 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, '15.0'
+platform :ios, '15.1'
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -47,6 +47,28 @@ target 'MonoliteHRNative' do
       target.build_configurations.each do |config|
         config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
       end
+    end
+
+    # Copy Hermes dSYM into the archive so Xcode includes it during upload
+    app_project = installer.aggregate_targets.first.user_project
+    app_target = app_project.targets.find { |t| t.name == 'MonoliteHRNative' }
+    if app_target
+      phase = app_target.new_shell_script_build_phase('Copy Hermes dSYM')
+      phase.shell_script = <<~SCRIPT
+        if [ "${CONFIGURATION}" = "Release" ]; then
+          HERMES_DSYM=$(find "${PODS_ROOT}/hermes-engine" -name "hermes.framework.dSYM" -type d 2>/dev/null | head -1)
+          if [ -z "$HERMES_DSYM" ]; then
+            HERMES_DSYM=$(find "${PODS_ROOT}/hermes-engine" -name "*.dSYM" -type d 2>/dev/null | head -1)
+          fi
+          if [ -n "$HERMES_DSYM" ] && [ -d "$HERMES_DSYM" ]; then
+            echo "Copying Hermes dSYM from $HERMES_DSYM to ${DWARF_DSYM_FOLDER_PATH}"
+            cp -r "$HERMES_DSYM" "${DWARF_DSYM_FOLDER_PATH}/" 2>/dev/null || true
+          else
+            echo "warning: Hermes dSYM not found in ${PODS_ROOT}/hermes-engine"
+          fi
+        fi
+      SCRIPT
+      app_project.save
     end
     
     # Fix for react-native-reanimated build issues - create stub coroutine header

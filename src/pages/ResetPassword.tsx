@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -31,34 +31,20 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
+      // The send-auth-email hook will handle sending the email with proper token_hash
+      // for mobile deep linking. Don't call send-password-reset-email separately
+      // as it doesn't include the token_hash needed for verification.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'monolite-hr://reset-password',
+        redirectTo: 'monolite-hr://auth/callback?type=recovery',
       });
 
       if (error) throw error;
-
-      // Try to send custom email via Edge Function
-      try {
-        await supabase.functions.invoke('send-password-reset-email', {
-          body: {
-            email,
-            resetUrl: 'monolite-hr://reset-password',
-          },
-        });
-      } catch (functionError) {
-        console.error('Error sending email via Brevo:', functionError);
-        // Don't throw - we still want to show success if Supabase part worked
-      }
 
       Toast.show({
         type: 'success',
         text1: t('auth.checkEmail'),
         text2: t('auth.resetLinkSent'),
       });
-
-      setTimeout(() => {
-        navigation.navigate('Auth');
-      }, 2000);
     } catch (error: any) {
       Toast.show({
         type: 'error',
@@ -72,10 +58,16 @@ export default function ResetPassword() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
         <Card style={styles.card}>
           <CardHeader style={styles.header}>
             <View style={styles.iconContainer}>
@@ -126,7 +118,8 @@ export default function ResetPassword() {
             </View>
           </CardContent>
         </Card>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -135,6 +128,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  keyboardAvoid: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,

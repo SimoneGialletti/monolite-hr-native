@@ -1,18 +1,48 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TextComponent } from '@/components/ui/text';
 import { supabase } from '@/integrations/supabase/client';
 import { colors, spacing, borderRadius, goldGlow } from '@/theme';
+import { useAuth } from '@/hooks/useAuth';
+import { usePendingInvitations, PendingInvitation as InvitationType } from '@/hooks/usePendingInvitations';
+import { InvitationModal } from '@/components/InvitationModal';
 
 export default function PendingInvitation() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
+
+  // Invitation modal state
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
+  const {
+    invitations,
+    loading: invitationsLoading,
+    fetchInvitations,
+    acceptInvitation,
+    declineInvitation,
+    processingId,
+  } = usePendingInvitations();
+
+  // Check for pending invitations on mount
+  useEffect(() => {
+    const checkInvitations = async () => {
+      if (user) {
+        const pendingInvitations = await fetchInvitations(user.email || '', user.id);
+        if (pendingInvitations.length > 0) {
+          setShowInvitationModal(true);
+        }
+      }
+    };
+
+    checkInvitations();
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -20,7 +50,45 @@ export default function PendingInvitation() {
   };
 
   const handleOpenDashboard = () => {
-    Linking.openURL('https://dashboard.monoliteai.com');
+    Linking.openURL('https://monolite-building.lovable.app/');
+  };
+
+  // Handle accepting an invitation
+  const handleAcceptInvitation = async (invitation: InvitationType) => {
+    if (!user) return;
+
+    const success = await acceptInvitation(invitation, user.id);
+
+    if (success) {
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('invitationModal.acceptSuccess'),
+      });
+
+      // If no more invitations, close modal and navigate to Main
+      if (invitations.length <= 1) {
+        setShowInvitationModal(false);
+        navigation.navigate('Main');
+      }
+    }
+  };
+
+  // Handle declining an invitation
+  const handleDeclineInvitation = async (invitationId: string) => {
+    const success = await declineInvitation(invitationId);
+
+    if (success) {
+      Toast.show({
+        type: 'info',
+        text1: t('invitationModal.declineSuccess'),
+      });
+
+      // If no more invitations, close modal (stay on this page since no company)
+      if (invitations.length <= 1) {
+        setShowInvitationModal(false);
+      }
+    }
   };
 
   return (
@@ -114,6 +182,16 @@ export default function PendingInvitation() {
           </CardContent>
         </Card>
       </ScrollView>
+
+      {/* Pending Invitations Modal */}
+      <InvitationModal
+        visible={showInvitationModal}
+        invitations={invitations}
+        loading={invitationsLoading}
+        processingId={processingId}
+        onAccept={handleAcceptInvitation}
+        onDecline={handleDeclineInvitation}
+      />
     </SafeAreaView>
   );
 }

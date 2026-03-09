@@ -26,6 +26,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { colors, spacing } from '@/theme';
 import { useAuth } from '@/hooks/useAuth';
+import { usePendingInvitations, PendingInvitation } from '@/hooks/usePendingInvitations';
+import { InvitationModal } from '@/components/InvitationModal';
 
 export default function Auth() {
   const { t } = useTranslation();
@@ -51,6 +53,18 @@ export default function Auth() {
   // Email already exists dialog
   const [showEmailExistsDialog, setShowEmailExistsDialog] = useState(false);
 
+  // Invitation modal state
+  const [showInvitationModal, setShowInvitationModal] = useState(false);
+  const [pendingUser, setPendingUser] = useState<{ id: string; email: string } | null>(null);
+  const {
+    invitations,
+    loading: invitationsLoading,
+    fetchInvitations,
+    acceptInvitation,
+    declineInvitation,
+    processingId,
+  } = usePendingInvitations();
+
   // Check if user is already logged in
   useEffect(() => {
     if (user) {
@@ -62,17 +76,18 @@ export default function Auth() {
     if (!user) return;
 
     try {
-      const { data: userCompany } = await supabase
-        .from('user_companies')
-        .select('id, role_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Check for pending invitations
+      const pendingInvitations = await fetchInvitations(user.email || '', user.id);
 
-      if (!userCompany) {
-        navigation.navigate('PendingInvitation');
-      } else {
-        navigation.navigate('Main');
+      if (pendingInvitations.length > 0) {
+        // User has pending invitations - show modal
+        setPendingUser({ id: user.id, email: user.email || '' });
+        setShowInvitationModal(true);
+        return;
       }
+
+      // Always navigate to Main (users without a company can still browse the app)
+      navigation.navigate('Main');
     } catch (error: any) {
       if (error?.name === 'AbortError' || error?.message?.includes('aborted')) {
         return;
@@ -115,7 +130,7 @@ export default function Auth() {
   };
 
   const handleSignUp = async () => {
-    if (!email || !password || !name || !surname || !phone || !selectedCity) {
+    if (!email || !password || !name || !surname) {
       Toast.show({
         type: 'error',
         text1: t('auth.error'),
@@ -217,20 +232,20 @@ export default function Auth() {
         text2: t('auth.loginSuccess'),
       });
 
-      const user = data.user;
-      if (user) {
-        // Check if user has a company
-        const { data: userCompany } = await supabase
-          .from('user_companies')
-          .select('id, role_id')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      const loggedInUser = data.user;
+      if (loggedInUser) {
+        // Check for pending invitations first
+        const pendingInvitations = await fetchInvitations(loggedInUser.email || '', loggedInUser.id);
 
-        if (!userCompany) {
-          navigation.navigate('PendingInvitation');
-        } else {
-          navigation.navigate('Main');
+        if (pendingInvitations.length > 0) {
+          // User has pending invitations - show modal
+          setPendingUser({ id: loggedInUser.id, email: loggedInUser.email || '' });
+          setShowInvitationModal(true);
+          return;
         }
+
+        // Always navigate to Main (users without a company can still browse the app)
+        navigation.navigate('Main');
       }
     } catch (error: any) {
       Toast.show({
@@ -257,7 +272,7 @@ export default function Auth() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'monolite-hr://reset-password',
+        redirectTo: 'monolite-hr://auth/callback',
       });
 
       if (error) throw error;
@@ -347,17 +362,18 @@ export default function Auth() {
 
       // Check company association
       if (data.user) {
-        const { data: userCompany } = await supabase
-          .from('user_companies')
-          .select('id, role_id')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
+        // Check for pending invitations first
+        const pendingInvitations = await fetchInvitations(data.user.email || '', data.user.id);
 
-        if (!userCompany) {
-          navigation.navigate('PendingInvitation');
-        } else {
-          navigation.navigate('Main');
+        if (pendingInvitations.length > 0) {
+          // User has pending invitations - show modal
+          setPendingUser({ id: data.user.id, email: data.user.email || '' });
+          setShowInvitationModal(true);
+          return;
         }
+
+        // Always navigate to Main (users without a company can still browse the app)
+        navigation.navigate('Main');
       }
     } catch (error: any) {
       // User cancelled - don't show error
@@ -392,7 +408,7 @@ export default function Auth() {
     if (email) {
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: 'monolite-hr://reset-password',
+          redirectTo: 'monolite-hr://auth/callback',
         });
         if (!error) {
           Toast.show({
@@ -403,6 +419,51 @@ export default function Auth() {
         }
       } catch (err) {
         // Silently fail - user can use forgot password link
+      }
+    }
+  };
+
+  // Handle accepting an invitation
+  const handleAcceptInvitation = async (invitation: PendingInvitation) => {
+    if (!pendingUser) return;
+
+    const success = await acceptInvitation(invitation, pendingUser.id);
+
+    if (success) {
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('invitationModal.acceptSuccess'),
+      });
+
+      // If no more invitations, close modal and navigate to Main
+      if (invitations.length <= 1) {
+        setShowInvitationModal(false);
+        setPendingUser(null);
+        navigation.navigate('Main');
+      }
+    }
+  };
+
+  // Handle declining an invitation
+  const handleDeclineInvitation = async (invitationId: string) => {
+    const success = await declineInvitation(invitationId);
+
+    if (success) {
+      Toast.show({
+        type: 'info',
+        text1: t('invitationModal.declineSuccess'),
+      });
+
+      // If no more invitations, close modal and check company status
+      if (invitations.length <= 1) {
+        setShowInvitationModal(false);
+
+        if (pendingUser) {
+          setPendingUser(null);
+          // Always navigate to Main (users without a company can still browse the app)
+          navigation.navigate('Main');
+        }
       }
     }
   };
@@ -462,7 +523,7 @@ export default function Auth() {
                     <TextComponent variant="body" style={styles.passwordLabel}>
                       {t('auth.password')}
                     </TextComponent>
-                    <Pressable onPress={handleResetPassword}>
+                    <Pressable onPress={() => navigation.navigate('ResetPassword')}>
                       <TextComponent variant="body" style={styles.forgotPasswordLink}>
                         {t('auth.forgotPassword')}
                       </TextComponent>
@@ -657,6 +718,16 @@ export default function Auth() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Pending Invitations Modal */}
+      <InvitationModal
+        visible={showInvitationModal}
+        invitations={invitations}
+        loading={invitationsLoading}
+        processingId={processingId}
+        onAccept={handleAcceptInvitation}
+        onDecline={handleDeclineInvitation}
+      />
     </SafeAreaView>
   );
 }

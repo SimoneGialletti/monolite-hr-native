@@ -18,7 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '@/theme';
-import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { formatLocalizedDate } from '@/utils/dateLocale';
 
 interface LeaveRequest {
   id: string;
@@ -233,21 +234,9 @@ export default function MyActivities() {
     try {
       setIsLoadingHours(true);
       const { data, error } = await (supabase as any)
-        .from('v_workers_hours')
-        .select(`
-          id,
-          work_date,
-          construction_site_name,
-          work_description,
-          regular_hours,
-          overtime_hours,
-          rain_hours,
-          total_hours,
-          work_type
-        `)
-        .eq('user_id', user.id)
-        .order('work_date', { ascending: false })
-        .order('created_at', { ascending: false });
+        .rpc('get_worker_hours_list', {
+          p_user_id: user.id,
+        });
 
       if (error) {
         console.error('Error loading work hours:', error);
@@ -426,9 +415,17 @@ export default function MyActivities() {
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return '-';
     try {
+      // For date-only strings (YYYY-MM-DD), parse as local date to avoid timezone shift
+      // JavaScript's new Date("YYYY-MM-DD") interprets as UTC, causing issues
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return formatLocalizedDate(date, 'MMM dd, yyyy');
+      }
+      // For full timestamps, parse normally
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return '-';
-      return format(date, 'MMM dd, yyyy');
+      return formatLocalizedDate(date, 'MMM dd, yyyy');
     } catch {
       return '-';
     }

@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, withRepeat } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Button } from '@/components/ui/button';
 import { TextComponent } from '@/components/ui/text';
-import { supabase } from '@/integrations/supabase/client';
-import { colors, spacing, borderRadius, goldGlowIntense } from '@/theme';
+import { colors, spacing, goldGlowIntense } from '@/theme';
+import { RootStackParamList } from '@/navigation/types';
 
-export default function EmailConfirmed() {
+export default function EmailChangeConfirmed() {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
-  const [isVisible, setIsVisible] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const route = useRoute<RouteProp<RootStackParamList, 'EmailChangeConfirmed'>>();
+  const step = route.params?.step || 'first';
+  const otherEmail = route.params?.otherEmail || '';
+  const isComplete = step === 'complete';
 
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
@@ -23,38 +25,17 @@ export default function EmailConfirmed() {
 
   useEffect(() => {
     setTimeout(() => {
-      setIsVisible(true);
       scale.value = withSpring(1, { damping: 15, stiffness: 300 });
       opacity.value = withTiming(1, { duration: 700 });
       translateY.value = withSpring(0, { damping: 15, stiffness: 300 });
     }, 100);
 
-    // Pulse animation
     pulseScale.value = withRepeat(
       withTiming(1.1, { duration: 2000 }),
       -1,
       true
     );
-
-    checkCompanyInvitation();
   }, []);
-
-  const checkCompanyInvitation = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setChecking(false);
-        return;
-      }
-
-      setChecking(false);
-      // Always navigate to Main (users without a company can still browse the app)
-    } catch (error) {
-      console.error('Error in checkCompanyInvitation:', error);
-      setChecking(false);
-    }
-  };
 
   const iconAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -73,29 +54,37 @@ export default function EmailConfirmed() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        {/* Animated Checkmark */}
         <Animated.View style={[styles.iconContainer, iconAnimatedStyle]}>
           <Animated.View style={[styles.pulseContainer, pulseAnimatedStyle]}>
-            <Icon name="check-circle" size={96} color={colors.gold} />
+            <Icon
+              name={isComplete ? 'email-check-outline' : 'email-alert-outline'}
+              size={96}
+              color={colors.gold}
+            />
           </Animated.View>
         </Animated.View>
 
-        {/* Thank You Message */}
         <Animated.View style={[styles.textContainer, contentAnimatedStyle]}>
           <TextComponent variant="h1" style={styles.title}>
-            {t('emailConfirmed.thankYou')}
+            {isComplete
+              ? t('emailChangeConfirmed.title')
+              : t('emailChangeConfirmed.firstStepTitle')}
           </TextComponent>
           <TextComponent variant="body" style={styles.message}>
-            {t('emailConfirmed.successMessage')}
+            {isComplete
+              ? t('emailChangeConfirmed.message')
+              : t('emailChangeConfirmed.firstStepMessage')}
           </TextComponent>
+          {!isComplete && otherEmail ? (
+            <TextComponent variant="body" style={styles.emailHighlight}>
+              {otherEmail}
+            </TextComponent>
+          ) : null}
         </Animated.View>
 
-        {/* Continue Button */}
         <Animated.View style={[styles.buttonContainer, contentAnimatedStyle]}>
           <Button
             onPress={() => {
-              // User is already authenticated after email verification
-              // Navigate to Main which will check for company association
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Main' }],
@@ -104,7 +93,7 @@ export default function EmailConfirmed() {
             style={styles.continueButton}
           >
             <TextComponent variant="body" style={styles.buttonText}>
-              {t('emailConfirmed.continue')}
+              {t('emailChangeConfirmed.continue')}
             </TextComponent>
           </Button>
         </Animated.View>
@@ -144,6 +133,12 @@ const styles = StyleSheet.create({
     color: colors.mutedForeground,
     textAlign: 'center',
     fontSize: 18,
+  },
+  emailHighlight: {
+    color: colors.gold,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '700',
   },
   buttonContainer: {
     width: '100%',

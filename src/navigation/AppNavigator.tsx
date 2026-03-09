@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { NavigationContainer, LinkingOptions, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
@@ -41,12 +42,14 @@ const linking: LinkingOptions<RootStackParamList> = {
           redirect_to: (redirect_to: string) => redirect_to,
           access_token: (access_token: string) => access_token,
           refresh_token: (refresh_token: string) => refresh_token,
+          token: (token: string) => token,
           error: (error: string) => error,
           error_description: (error_description: string) => error_description,
         },
       },
       ConfirmEmail: 'confirm-email',
       EmailConfirmed: 'email-confirmed',
+      EmailChangeConfirmed: 'email-change-confirmed',
       ResetPassword: 'reset-password',
       UpdatePassword: 'update-password',
       AcceptInvitation: {
@@ -74,6 +77,7 @@ import LeaveRequestScreen from '@/pages/LeaveRequest';
 import PendingInvitationScreen from '@/pages/PendingInvitation';
 import ConfirmEmailScreen from '@/pages/ConfirmEmail';
 import EmailConfirmedScreen from '@/pages/EmailConfirmed';
+import EmailChangeConfirmedScreen from '@/pages/EmailChangeConfirmed';
 import ResetPasswordScreen from '@/pages/ResetPassword';
 import UpdatePasswordScreen from '@/pages/UpdatePassword';
 import AcceptInvitationScreen from '@/pages/AcceptInvitation';
@@ -84,6 +88,7 @@ import TermsAndConditionsScreen from '@/pages/TermsAndConditions';
 import NotFoundScreen from '@/pages/NotFound';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+const JSStack = createStackNavigator(); // JS-based stack for form screens (fixes Android rendering issue)
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Bottom Tab Navigator
@@ -154,24 +159,25 @@ function MainTabs() {
   );
 }
 
-// Main Stack Navigator
+// Main Stack Navigator - Using JS-based stack to fix Android rendering issues
 function MainStack() {
   return (
-    <Stack.Navigator
+    <JSStack.Navigator
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
+        cardStyle: { backgroundColor: colors.background },
+        cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
       }}
     >
-      <Stack.Screen name="Home" component={MainTabs} />
-      <Stack.Screen name="LogHours" component={LogHoursScreen} />
-      <Stack.Screen name="MaterialRequest" component={MaterialRequestScreen} />
-      <Stack.Screen name="LeaveRequest" component={LeaveRequestScreen} />
-      <Stack.Screen name="MyActivities" component={MyActivitiesScreen} />
-      <Stack.Screen name="Communications" component={CommunicationsScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
-      <Stack.Screen name="PendingInvitation" component={PendingInvitationScreen} />
-    </Stack.Navigator>
+      <JSStack.Screen name="Home" component={MainTabs} />
+      <JSStack.Screen name="LogHours" component={LogHoursScreen} />
+      <JSStack.Screen name="MaterialRequest" component={MaterialRequestScreen} />
+      <JSStack.Screen name="LeaveRequest" component={LeaveRequestScreen} />
+      <JSStack.Screen name="MyActivities" component={MyActivitiesScreen} />
+      <JSStack.Screen name="Communications" component={CommunicationsScreen} />
+      <JSStack.Screen name="Settings" component={SettingsScreen} />
+      <JSStack.Screen name="PendingInvitation" component={PendingInvitationScreen} />
+    </JSStack.Navigator>
   );
 }
 
@@ -181,11 +187,10 @@ export default function AppNavigator() {
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   // Initialize auth deep linking for non-callback URLs
-  // Note: auth/callback URLs are handled by AuthCallback screen via React Navigation
+  // Note: auth/callback URLs are handled by AuthCallback screen via Linking events
   useEffect(() => {
     const cleanup = initializeAuthDeepLinking((type) => {
       console.log('AppNavigator - Auth session detected from non-callback URL, type:', type);
-      // This is for future use if we add other auth deep links
     });
 
     return cleanup;
@@ -213,6 +218,7 @@ export default function AppNavigator() {
               <Stack.Screen name="Main" component={MainStack} />
               <Stack.Screen name="ConfirmEmail" component={ConfirmEmailScreen} />
               <Stack.Screen name="EmailConfirmed" component={EmailConfirmedScreen} />
+              <Stack.Screen name="EmailChangeConfirmed" component={EmailChangeConfirmedScreen} />
               <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
               <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
               <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
@@ -227,6 +233,7 @@ export default function AppNavigator() {
               <Stack.Screen name="AuthCallback" component={AuthCallbackScreen} />
               <Stack.Screen name="ConfirmEmail" component={ConfirmEmailScreen} />
               <Stack.Screen name="EmailConfirmed" component={EmailConfirmedScreen} />
+              <Stack.Screen name="EmailChangeConfirmed" component={EmailChangeConfirmedScreen} />
               <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
               <Stack.Screen name="UpdatePassword" component={UpdatePasswordScreen} />
               <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />

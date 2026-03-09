@@ -28,7 +28,7 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: AsyncStorageAdapter,
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false, // Disable automatic URL detection since we handle it manually
+    detectSessionInUrl: true, // Enable automatic URL detection for deep links
   }
 });
 
@@ -73,6 +73,20 @@ export const extractAuthParamsFromUrl = (url: string): {
 // Backward compatibility alias
 export const extractSessionFromUrl = extractAuthParamsFromUrl;
 
+// Store pending auth callback URL for AuthCallback screen to retrieve
+// This is needed because the URL event may fire before AuthCallback mounts
+let pendingAuthCallbackUrl: string | null = null;
+
+export const getPendingAuthCallbackUrl = (): string | null => {
+  const url = pendingAuthCallbackUrl;
+  pendingAuthCallbackUrl = null; // Clear after retrieving
+  return url;
+};
+
+export const setPendingAuthCallbackUrl = (url: string | null) => {
+  pendingAuthCallbackUrl = url;
+};
+
 // Initialize deep link handling for auth
 export const initializeAuthDeepLinking = (onSessionDetected: (type?: string) => void) => {
   // Handle initial URL (app opened via deep link)
@@ -95,14 +109,15 @@ export const initializeAuthDeepLinking = (onSessionDetected: (type?: string) => 
 };
 
 const handleAuthUrl = async (url: string, onSessionDetected: (type?: string) => void) => {
-  // Skip auth callback URLs - let AuthCallback screen handle those via React Navigation
-  // This prevents duplicate handling and race conditions
+  // For auth/callback URLs, store the URL for AuthCallback screen to process
+  // OTP verification is handled exclusively by AuthCallback to avoid race conditions
   if (url.includes('auth/callback')) {
-    console.log('Supabase client - Skipping auth/callback URL, letting AuthCallback screen handle it');
+    console.log('Supabase client - Storing auth/callback URL for AuthCallback screen:', url);
+    setPendingAuthCallbackUrl(url);
     return;
   }
 
-  // Only handle other auth-related deep links here
+  // Only handle non-callback auth-related deep links
   if (!url.includes('auth/')) {
     return;
   }
@@ -122,33 +137,6 @@ const handleAuthUrl = async (url: string, onSessionDetected: (type?: string) => 
       onSessionDetected(authParams.type);
     } else {
       console.error('Supabase client - Error setting session:', error);
-    }
-  } else if (authParams?.token_hash && authParams?.type) {
-    // Handle OTP flow (token_hash from Send Email Hook)
-    console.log('Supabase client - Verifying OTP from URL, type:', authParams.type);
-
-    // Map email_action_type to Supabase OTP type
-    let otpType: 'signup' | 'recovery' | 'magiclink' | 'email_change' | 'email' = 'signup';
-    if (authParams.type === 'recovery') {
-      otpType = 'recovery';
-    } else if (authParams.type === 'magiclink') {
-      otpType = 'magiclink';
-    } else if (authParams.type === 'email_change') {
-      otpType = 'email_change';
-    } else if (authParams.type === 'signup' || authParams.type === 'email') {
-      otpType = 'signup';
-    }
-
-    const { data, error } = await supabase.auth.verifyOtp({
-      token_hash: authParams.token_hash,
-      type: otpType,
-    });
-
-    if (!error && data?.session) {
-      console.log('Supabase client - OTP verified successfully, type:', authParams.type);
-      onSessionDetected(authParams.type);
-    } else {
-      console.error('Supabase client - Error verifying OTP:', error);
     }
   }
 };

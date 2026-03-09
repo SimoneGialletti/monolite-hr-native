@@ -66,13 +66,13 @@ export default function AppleCallback() {
           // Check if user has a company
           const { data: { user: currentUser } } = await supabase.auth.getUser();
           if (currentUser) {
-            const { data: userCompany } = await supabase
+            const { data: userCompanies } = await supabase
               .from('user_companies')
               .select('id, role_id')
               .eq('user_id', currentUser.id)
-              .maybeSingle();
+              .limit(1);
 
-            if (!userCompany) {
+            if (!userCompanies || userCompanies.length === 0) {
               navigation.navigate('PendingInvitation');
             } else {
               navigation.navigate('Main');

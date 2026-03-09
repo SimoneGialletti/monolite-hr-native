@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Pressable, Modal, FlatList } from 'react-native';
+import { View, StyleSheet, Pressable, Modal, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { Picker } from '@react-native-picker/picker';
 import { colors, spacing, borderRadius, goldGlow, transitionDuration } from '@/theme';
@@ -12,6 +12,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export interface SelectOption {
   label: string;
   value: string;
+  subtitle?: string;
 }
 
 export interface SelectProps {
@@ -40,7 +41,8 @@ export const Select: React.FC<SelectProps> = ({
 
   const filteredOptions = searchable
     ? options.filter((opt) =>
-        opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+        opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (opt.subtitle && opt.subtitle.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : options;
 
@@ -93,7 +95,10 @@ export const Select: React.FC<SelectProps> = ({
         animationType="none"
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <AnimatedPressable
             style={[styles.modalBackdrop, backdropStyle]}
             onPress={() => setModalVisible(false)}
@@ -123,6 +128,7 @@ export const Select: React.FC<SelectProps> = ({
             <FlatList
               data={filteredOptions}
               keyExtractor={(item) => item.value}
+              keyboardShouldPersistTaps="handled"
               renderItem={({ item }) => (
                 <Pressable
                   style={[
@@ -144,6 +150,11 @@ export const Select: React.FC<SelectProps> = ({
                   >
                     {item.label}
                   </TextComponent>
+                  {item.subtitle && (
+                    <TextComponent variant="caption" style={styles.optionSubtitle}>
+                      {item.subtitle}
+                    </TextComponent>
+                  )}
                 </Pressable>
               )}
               ListEmptyComponent={
@@ -155,7 +166,7 @@ export const Select: React.FC<SelectProps> = ({
               }
             />
           </AnimatedView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -200,7 +211,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
-    maxHeight: '80%',
+    height: '70%',
     paddingBottom: spacing.lg,
   },
   modalHeader: {
@@ -241,5 +252,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: colors.mutedForeground,
+  },
+  optionSubtitle: {
+    color: colors.mutedForeground,
+    marginTop: 2,
   },
 });

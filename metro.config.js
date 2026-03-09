@@ -13,6 +13,14 @@ const config = {
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  watcher: {
+    watchman: {
+      // Force no watchman
+    },
+    healthCheck: {
+      enabled: false,
+    },
+  },
 };
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

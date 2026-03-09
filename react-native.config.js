@@ -1,7 +1,7 @@
 module.exports = {
   project: {
-    ios: {},
-    android: {},
+    android: {
+      packageName: 'com.monolite.hr',
+    },
   },
-  assets: ['./ios/MonoliteHRNative/Fonts'],
 };

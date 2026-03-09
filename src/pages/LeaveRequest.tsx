@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Pressable, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, KeyboardAvoidingView, Platform, Keyboard, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -13,8 +13,20 @@ import { TextComponent } from '@/components/ui/text';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserCompany } from '@/hooks/useUserCompany';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '@/theme';
+import { toLocalDateString } from '@/utils/dateLocale';
 
 interface LeaveRequestType {
   id: string;
@@ -35,6 +47,8 @@ export default function LeaveRequest() {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { hasCompany } = useUserCompany();
+  const [showNoCompanyDialog, setShowNoCompanyDialog] = useState(false);
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,17 +106,14 @@ export default function LeaveRequest() {
         .from('user_companies')
         .select('company_id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error loading company:', error);
-        Toast.show({
-          type: 'error',
-          text1: t('common.error'),
-          text2: t('materialRequest.companyNotFound'),
-        });
         return;
       }
+
+      if (!data) return;
 
       setCompanyId(data?.company_id || null);
     } catch (error) {
@@ -149,6 +160,11 @@ export default function LeaveRequest() {
   };
 
   const handleSubmit = async () => {
+    if (!hasCompany) {
+      setShowNoCompanyDialog(true);
+      return;
+    }
+
     if (!formData.requestTypeId) {
       Toast.show({
         type: 'error',
@@ -206,17 +222,45 @@ export default function LeaveRequest() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await (supabase as any).from('leave_requests').insert({
-        company_id: companyId,
-        user_id: user.id,
-        leave_request_type_id: formData.requestTypeId,
-        start_date: formData.startDate.toISOString(),
-        end_date: formData.endDate.toISOString(),
-        reason: formData.reason,
-        detailed_description: formData.detailedDescription || null,
-      });
+      // Leave request type ID
+      const LEAVE_REQUEST_TYPE_ID = '988e4834-1d98-4ec8-8f89-77fca36f58c8';
 
-      if (error) throw error;
+      // Calculate duration in days
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      const durationDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      // First, create the worker_request record
+      const { data: requestData, error: requestError } = await (supabase as any)
+        .from('worker_requests')
+        .insert({
+          request_type_id: LEAVE_REQUEST_TYPE_ID,
+          user_id: user.id,
+          company_id: companyId,
+          status: 'pending',
+          title: formData.reason,
+          description: formData.detailedDescription || null,
+          submitted_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (requestError) throw requestError;
+
+      // Then, create the leave request details
+      const { error: detailsError } = await (supabase as any)
+        .from('worker_leave_request_details')
+        .insert({
+          request_id: requestData.id,
+          leave_type_id: formData.requestTypeId,
+          start_date: toLocalDateString(formData.startDate),
+          end_date: toLocalDateString(formData.endDate),
+          duration_days: durationDays,
+          reason: formData.reason,
+          detailed_description: formData.detailedDescription || null,
+        });
+
+      if (detailsError) throw detailsError;
 
       Toast.show({
         type: 'success',
@@ -243,6 +287,7 @@ export default function LeaveRequest() {
   }));
 
   return (
+    <>
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -363,6 +408,28 @@ export default function LeaveRequest() {
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+
+    {/* No Company Dialog */}
+    <AlertDialog open={showNoCompanyDialog} onOpenChange={setShowNoCompanyDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('noCompany.title')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('noCompany.message')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onPress={() => setShowNoCompanyDialog(false)}>
+            {t('noCompany.close')}
+          </AlertDialogCancel>
+          <AlertDialogAction onPress={() => {
+            setShowNoCompanyDialog(false);
+            Linking.openURL('https://monolite-building.lovable.app/');
+          }}>
+            {t('noCompany.createCompany')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 

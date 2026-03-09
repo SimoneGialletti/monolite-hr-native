@@ -1,8 +1,18 @@
 export type RootStackParamList = {
   Auth: undefined;
-  AuthCallback: undefined;
+  AuthCallback: {
+    token_hash?: string;
+    type?: string;
+    redirect_to?: string;
+    access_token?: string;
+    refresh_token?: string;
+    token?: string;
+    error?: string;
+    error_description?: string;
+  } | undefined;
   ConfirmEmail: undefined;
   EmailConfirmed: undefined;
+  EmailChangeConfirmed: { step: 'first' | 'complete'; otherEmail?: string };
   ResetPassword: undefined;
   UpdatePassword: undefined;
   PrivacyPolicy: undefined;

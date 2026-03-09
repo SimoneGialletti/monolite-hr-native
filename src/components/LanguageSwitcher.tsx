@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { TextComponent } from './ui/text';
 import { colors, spacing, borderRadius } from '@/theme';
+import { saveLanguagePreference } from '@/i18n/config';
 
 export const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
@@ -10,12 +11,17 @@ export const LanguageSwitcher: React.FC = () => {
   const languages = [
     { code: 'en', label: 'EN' },
     { code: 'it', label: 'IT' },
+    { code: 'ar-eg', label: 'AR' },
+    { code: 'ro', label: 'RO' },
+    { code: 'sq', label: 'SQ' },
+    { code: 'fr', label: 'FR' },
   ];
 
   const currentLanguage = i18n.language || 'en';
 
-  const switchLanguage = (langCode: string) => {
-    i18n.changeLanguage(langCode);
+  const switchLanguage = async (langCode: string) => {
+    await i18n.changeLanguage(langCode);
+    await saveLanguagePreference(langCode);
   };
 
   return (

@@ -1,24 +1,50 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Toast from 'react-native-toast-message';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TextComponent } from '@/components/ui/text';
 import { AppBar } from '@/components/ui/app-bar';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserCompany } from '@/hooks/useUserCompany';
+import { usePendingInvitations, PendingInvitation } from '@/hooks/usePendingInvitations';
 import { colors, spacing, borderRadius, goldGlow } from '@/theme';
+import { toLocalDateString } from '@/utils/dateLocale';
 
 const Home = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { hasCompany, loading: companyLoading } = useUserCompany();
   const [userName, setUserName] = useState('');
   const [todayHours, setTodayHours] = useState(0);
+  const [showNoCompanyDialog, setShowNoCompanyDialog] = useState(false);
+
+  // Pending invitations
+  const {
+    invitations,
+    loading: invitationsLoading,
+    fetchInvitations,
+    acceptInvitation,
+    declineInvitation,
+    processingId,
+  } = usePendingInvitations();
 
   useEffect(() => {
     if (user) {
@@ -27,6 +53,40 @@ const Home = () => {
       }
     }
   }, [user]);
+
+  // Fetch pending invitations when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchInvitations(user.email || '', user.id);
+      }
+    }, [user])
+  );
+
+  const handleAcceptInvitation = async (invitation: PendingInvitation) => {
+    if (!user) return;
+
+    const success = await acceptInvitation(invitation, user.id);
+
+    if (success) {
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('invitationModal.acceptSuccess'),
+      });
+    }
+  };
+
+  const handleDeclineInvitation = async (invitationId: string) => {
+    const success = await declineInvitation(invitationId);
+
+    if (success) {
+      Toast.show({
+        type: 'info',
+        text1: t('invitationModal.declineSuccess'),
+      });
+    }
+  };
 
   // Refetch hours when screen comes into focus (e.g., after returning from LogHours)
   useFocusEffect(
@@ -39,26 +99,36 @@ const Home = () => {
 
   const loadTodayHours = async (userId: string) => {
     try {
+      const localDate = toLocalDateString(new Date());
+
       const { data, error } = await (supabase as any)
-        .from('v_workers_total_hours_today')
-        .select('total_hours')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .rpc('get_worker_hours_for_date', {
+          p_user_id: userId,
+          p_work_date: localDate,
+        });
 
       if (error) {
-        // Only log if it's not a "no rows" error
-        if (error.code !== 'PGRST116') {
-          console.error("Error loading today's hours:", error);
-        }
+        console.error("Error loading today's hours:", error);
         setTodayHours(0);
         return;
       }
 
-      setTodayHours(data?.total_hours || 0);
+      setTodayHours(data || 0);
     } catch (err) {
       console.error('Error:', err);
       setTodayHours(0);
     }
+  };
+
+  const companyRequiredPaths = ['LogHours', 'MaterialRequest', 'LeaveRequest'];
+
+  const navigateWithCompanyCheck = (path: string, params?: any) => {
+    if (companyLoading) return;
+    if (companyRequiredPaths.includes(path) && !hasCompany) {
+      setShowNoCompanyDialog(true);
+      return;
+    }
+    navigation.navigate(path, params);
   };
 
   const mainActions = [
@@ -83,6 +153,7 @@ const Home = () => {
   ];
 
   return (
+    <>
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppBar />
       <ScrollView
@@ -100,39 +171,116 @@ const Home = () => {
           </View>
         </View>
 
-        {/* Daily Hours Indicator */}
-        <Card style={styles.hoursCard}>
-          <View style={styles.hoursContainer}>
-            <View style={styles.hoursRow}>
-              <TextComponent variant="h1" style={styles.hoursText}>
-                {todayHours.toFixed(1)}
-              </TextComponent>
-              <TextComponent variant="h3" style={styles.hoursUnit}>
-                h
-              </TextComponent>
-            </View>
-            <TextComponent variant="caption" style={styles.hoursLabel}>
-              {t('home.todaysHours')}
-            </TextComponent>
-            {todayHours > 8 && (
-              <Pressable
-                onPress={() => navigation.navigate('LogHours')}
-                style={styles.overtimeButton}
-              >
-                <TextComponent variant="caption" style={styles.overtimeText}>
-                  {t('logHours.overtime')}: {(todayHours - 8).toFixed(1)}h
+        {/* Pending Invitations Section */}
+        {invitations.length > 0 && (
+          <Card style={styles.invitationsCard}>
+            <CardHeader>
+              <View style={styles.invitationsHeader}>
+                <Icon name="email-outline" size={24} color={colors.gold} />
+                <TextComponent variant="h3" style={styles.invitationsTitle}>
+                  {t('invitationModal.title')}
                 </TextComponent>
-              </Pressable>
-            )}
-          </View>
-        </Card>
+              </View>
+            </CardHeader>
+            <CardContent style={styles.invitationsContent}>
+              {invitationsLoading ? (
+                <ActivityIndicator size="small" color={colors.gold} />
+              ) : (
+                invitations.map((invitation) => (
+                  <View key={invitation.invitation_id} style={styles.invitationItem}>
+                    <View style={styles.invitationInfo}>
+                      <TextComponent variant="body" style={styles.invitationCompany}>
+                        {invitation.company_name}
+                      </TextComponent>
+                      <TextComponent variant="caption" style={styles.invitationRole}>
+                        {invitation.role_display_name || t('invitationModal.role')}
+                      </TextComponent>
+                      {invitation.invited_by_full_name && (
+                        <TextComponent variant="caption" style={styles.invitationInvitedBy}>
+                          {t('invitationModal.invitedBy')}: {invitation.invited_by_full_name}
+                        </TextComponent>
+                      )}
+                      {invitation.days_until_expiry !== null && (
+                        <TextComponent variant="caption" style={styles.invitationExpiry}>
+                          {t('invitationModal.daysLeft', { count: invitation.days_until_expiry })}
+                        </TextComponent>
+                      )}
+                    </View>
+                    <View style={styles.invitationActions}>
+                      <Pressable
+                        style={[
+                          styles.invitationButton,
+                          styles.acceptButton,
+                          processingId === invitation.invitation_id && styles.buttonDisabled,
+                        ]}
+                        onPress={() => handleAcceptInvitation(invitation)}
+                        disabled={processingId === invitation.invitation_id}
+                      >
+                        {processingId === invitation.invitation_id ? (
+                          <ActivityIndicator size="small" color={colors.primaryForeground} />
+                        ) : (
+                          <Icon name="check" size={20} color={colors.primaryForeground} />
+                        )}
+                      </Pressable>
+                      <Pressable
+                        style={[
+                          styles.invitationButton,
+                          styles.declineButton,
+                          processingId === invitation.invitation_id && styles.buttonDisabled,
+                        ]}
+                        onPress={() => handleDeclineInvitation(invitation.invitation_id)}
+                        disabled={processingId === invitation.invitation_id}
+                      >
+                        <Icon name="close" size={20} color={colors.destructive} />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Daily Hours Indicator */}
+        <Pressable
+          onPress={() => navigateWithCompanyCheck('LogHours', { initialDate: new Date().toISOString() })}
+        >
+          <Card style={styles.hoursCard}>
+            <View style={styles.hoursContainer}>
+              <View style={styles.hoursRow}>
+                <TextComponent variant="h1" style={styles.hoursText}>
+                  {todayHours.toFixed(1)}
+                </TextComponent>
+                <TextComponent variant="h3" style={styles.hoursUnit}>
+                  h
+                </TextComponent>
+              </View>
+              <TextComponent variant="caption" style={styles.hoursLabel}>
+                {t('home.todaysHours')}
+              </TextComponent>
+              {todayHours > 8 && (
+                <View style={styles.overtimeButton}>
+                  <TextComponent variant="caption" style={styles.overtimeText}>
+                    {t('logHours.overtime')}: {(todayHours - 8).toFixed(1)}h
+                  </TextComponent>
+                </View>
+              )}
+            </View>
+          </Card>
+        </Pressable>
 
         {/* Main Actions */}
         <View style={styles.actionsContainer}>
           {mainActions.map((action) => (
             <Pressable
               key={action.path}
-              onPress={() => navigation.navigate(action.path)}
+              onPress={() => {
+                if (action.path === 'LogHours') {
+                  navigateWithCompanyCheck('LogHours', { initialDate: new Date().toISOString() });
+                } else {
+                  navigateWithCompanyCheck(action.path);
+                }
+              }}
               style={styles.actionCard}
             >
               <View style={styles.actionContent}>
@@ -176,6 +324,28 @@ const Home = () => {
         </Card>
       </ScrollView>
     </SafeAreaView>
+
+    {/* No Company Dialog */}
+    <AlertDialog open={showNoCompanyDialog} onOpenChange={setShowNoCompanyDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t('noCompany.title')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('noCompany.message')}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onPress={() => setShowNoCompanyDialog(false)}>
+            {t('noCompany.close')}
+          </AlertDialogCancel>
+          <AlertDialogAction onPress={() => {
+            setShowNoCompanyDialog(false);
+            Linking.openURL('https://monolite-building.lovable.app/');
+          }}>
+            {t('noCompany.createCompany')}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
@@ -309,5 +479,71 @@ const styles = StyleSheet.create({
     color: colors.gold,
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Invitation styles
+  invitationsCard: {
+    marginBottom: spacing.xl,
+    borderColor: colors.gold,
+    borderWidth: 1,
+  },
+  invitationsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  invitationsTitle: {
+    color: colors.gold,
+  },
+  invitationsContent: {
+    gap: spacing.md,
+  },
+  invitationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  invitationInfo: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  invitationCompany: {
+    fontWeight: '600',
+    color: colors.foreground,
+  },
+  invitationRole: {
+    color: colors.mutedForeground,
+  },
+  invitationInvitedBy: {
+    color: colors.mutedForeground,
+    fontSize: 12,
+  },
+  invitationExpiry: {
+    color: colors.gold,
+    fontSize: 12,
+  },
+  invitationActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  invitationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  acceptButton: {
+    backgroundColor: colors.gold,
+  },
+  declineButton: {
+    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  buttonDisabled: {
+    opacity: 0.5,
   },
 });
